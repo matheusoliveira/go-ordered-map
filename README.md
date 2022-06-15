@@ -1,3 +1,5 @@
+[![Go build status](https://github.com/matheusoliveira/go-ordered-map/actions/workflows/build.yml/badge.svg)](https://github.com/matheusoliveira/go-ordered-map/actions/workflows/build.yml)
+
 # omap
 
 This package implements map in Golang, very similar to builtin map, but in which the iteration
