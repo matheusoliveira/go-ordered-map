@@ -22,5 +22,13 @@ jobs:
       run: go build -v ./...
 
     - name: Test
-      run: go test -v ./...
+      run: go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
+
+    - uses: codecov/codecov-action@v2
+      with:
+        token: 311e45a6-ca21-4647-a9f5-406bfc9a11d8
+        files: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+        verbose: true
 
