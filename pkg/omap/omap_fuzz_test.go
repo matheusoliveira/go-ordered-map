@@ -194,7 +194,7 @@ func FuzzOMapImpls(f *testing.F) {
 		keys := make([]string, len(byteOps))
 		vals := make([]int, len(byteOps))
 		for i, op := range byteOps {
-			opId := int(op)%len(opMapping)
+			opId := int(op) % len(opMapping)
 			ops[i] = opMapping[opId]
 			opsDebug[i] = opDebugMapping[opId]
 			kv := int(keyValues[i%len(keyValues)])
