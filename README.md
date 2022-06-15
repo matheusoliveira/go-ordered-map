@@ -2,6 +2,7 @@
 [![Codecov](https://codecov.io/gh/matheusoliveira/go-ordered-map/branch/main/graph/badge.svg?token=H4SjidS9Yq)](https://codecov.io/gh/matheusoliveira/go-ordered-map)
 [![Go Report Card](https://goreportcard.com/badge/github.com/matheusoliveira/go-ordered-map)](https://goreportcard.com/report/github.com/matheusoliveira/go-ordered-map)
 [![Go Reference](https://pkg.go.dev/badge/github.com/matheusoliveira/go-ordered-map@main/pkg/omap.svg)](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omap)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 # omap
 
