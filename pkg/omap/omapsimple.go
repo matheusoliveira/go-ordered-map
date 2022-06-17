@@ -76,19 +76,19 @@ func (m *OMapSimple[K, V]) Len() int {
 
 // Implement fmt.Stringer
 func (m *OMapSimple[K, V]) String() string {
-	return toString[K, V]("omap.OMapSimple", m.Iterator())
+	return IteratorToString[K, V]("omap.OMapSimple", m.Iterator())
 }
 
 // Implement json.Marshaler interface.
 func (m OMapSimple[K, V]) MarshalJSON() ([]byte, error) {
-	buffer, err := marshalJSON(m.Iterator())
+	buffer, err := MarshalJSON(m.Iterator())
 	return buffer, err
 }
 
 // Implement json.Unmarshaler interface.
 func (m *OMapSimple[K, V]) UnmarshalJSON(b []byte) error {
 	m.init()
-	return unmarshalJSON[K, V](m, b)
+	return UnmarshalJSON[K, V](m.Put, b)
 }
 
 // Move iterator to the next record, returning true if there is a next value and false otherwise.

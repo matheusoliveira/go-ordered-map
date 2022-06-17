@@ -6,7 +6,6 @@ import (
 
 type OMultiMap[K comparable, V any] interface {
 	Put(key K, value V)
-	//TODO: GetAll(key K) []V
 	GetValuesOf(key K) omap.OMapIterator[K, V]
 	DeleteAll(key K)
 	DeleteAt(omap.OMapIterator[K, V]) error

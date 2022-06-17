@@ -140,6 +140,23 @@ func (m *OMultiMapLinked[K, V]) Iterator() omap.OMapIterator[K, V] {
 	return &OMultiMapLinkedIterator[K, V]{cursor: m.head, bof: true, m: m}
 }
 
+// Implement fmt.Stringer
+func (m *OMultiMapLinked[K, V]) String() string {
+	return omap.IteratorToString[K, V]("omultimap.OMultiMapLinked", m.Iterator())
+}
+
+// Implement json.Marshaler interface.
+func (m OMultiMapLinked[K, V]) MarshalJSON() ([]byte, error) {
+	buffer, err := omap.MarshalJSON(m.Iterator())
+	return buffer, err
+}
+
+// Implement json.Unmarshaler interface.
+func (m *OMultiMapLinked[K, V]) UnmarshalJSON(b []byte) error {
+	m.init()
+	return omap.UnmarshalJSON[K, V](m.Put, b)
+}
+
 //// OMultiMap Iterator ////
 
 func (it *OMultiMapLinkedIterator[K, V]) Next() bool {

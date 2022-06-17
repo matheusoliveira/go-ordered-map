@@ -79,7 +79,7 @@ func (m *OMapBuiltin[K, V]) Len() int {
 
 // Implement fmt.Stringer
 func (m *OMapBuiltin[K, V]) String() string {
-	return toString[K, V]("omap.OMapBuiltin", m.Iterator())
+	return IteratorToString[K, V]("omap.OMapBuiltin", m.Iterator())
 }
 
 // Implement json.Marshaler interface.

@@ -1,6 +1,7 @@
 package omultimap_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"testing"
@@ -113,6 +114,24 @@ func TestDeleteAt(t *testing.T) {
 			mustAssertSlicesEqual(t, "still has other values", omap.IteratorValuesToSlice(mm.GetValuesOf("foo")), "1", "3", "4")
 			// validate rest of iterator
 			mustAssertSlicesEqual(t, "check rest of iterator", iteratorToStringSlice(delIt), "foo", "3", "foo", "4")
+			// delete first key
+			if delFirst := mm.Iterator(); !delFirst.Next() {
+				t.Error("delFirst should have Next")
+			} else if err := mm.DeleteAt(delFirst); err != nil {
+				t.Errorf("unexpected error: %v", err)
+			} else {
+				mustAssertSlicesEqual(t, "still has other keys", omap.IteratorKeysToSlice(mm.Iterator()), "foo", "foo")
+				mustAssertSlicesEqual(t, "still has other values", omap.IteratorValuesToSlice(mm.Iterator()), "3", "4")
+			}
+			// delete last key
+			if delLast := mm.Iterator(); !delLast.Next() || !delLast.Next() {
+				t.Error("delLast should have Next, twice")
+			} else if err := mm.DeleteAt(delLast); err != nil {
+				t.Errorf("unexpected error: %v", err)
+			} else {
+				mustAssertSlicesEqual(t, "still has other keys", omap.IteratorKeysToSlice(mm.Iterator()), "foo")
+				mustAssertSlicesEqual(t, "still has other values", omap.IteratorValuesToSlice(mm.Iterator()), "3")
+			}
 		})
 	}
 }
@@ -207,6 +226,42 @@ func TestDeleteAtErrors(t *testing.T) {
 			mmInvalidIt :=impl.initializerStrStr()
 			if err := mmInvalidIt.DeleteAt(invalidIt); err == nil {
 				t.Error("expected mmInvalidIt.DeleteAt to fail")
+			}
+		})
+	}
+}
+
+func TestJSON(t *testing.T) {
+	expectedJson := `{"foo":"1","bar":"2","foo":"3","bar":"4","foo":"5"}`
+	expectedStr := `[foo:1 bar:2 foo:3 bar:4 foo:5]`
+	for _, impl := range implementations {
+		t.Run(impl.name, func(t *testing.T) {
+			mm := impl.initializerStrStr()
+			mm.Put("foo", "1")
+			mm.Put("bar", "2")
+			mm.Put("foo", "3")
+			mm.Put("bar", "4")
+			mm.Put("foo", "5")
+			if js, err := json.Marshal(mm); err != nil {
+				t.Errorf("json.Marshal failed with error: %v", err)
+			} else if string(js) != expectedJson {
+				t.Errorf("unexpected json output: %v", string(js))
+			}
+			// Call Unmarshal and Marshal again
+			mm2 := impl.initializerStrStr()
+			if err := json.Unmarshal([]byte(expectedJson), mm2); err != nil {
+				t.Errorf("json.Unmarshal failed with error: %v", err)
+			} else if js, err := json.Marshal(mm2); err != nil {
+				t.Errorf("json.Marshal failed with error: %v", err)
+			} else if string(js) != expectedJson {
+				t.Errorf("unexpected json output: %v", string(js))
+			}
+			mustAssertSlicesEqual(t, "keys", omap.IteratorKeysToSlice(mm2.Iterator()), "foo", "bar", "foo", "bar", "foo")
+			mustAssertSlicesEqual(t, "values", omap.IteratorValuesToSlice(mm2.Iterator()), "1", "2", "3", "4", "5")
+			// Test Stringfier
+			exp := "omultimap.OMultiMap" + impl.name + expectedStr
+			if fmt.Sprint(mm2) != exp {
+				t.Errorf("expected %q, found %q", exp, fmt.Sprint(mm2))
 			}
 		})
 	}
