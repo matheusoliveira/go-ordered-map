@@ -26,6 +26,7 @@ type OMapLinkedHash[K comparable, V any] struct {
 	head   *mapEntry[*K, V]
 	tail   *mapEntry[*K, V]
 	hasher hasherFunc[K]
+	length int
 }
 
 // Implement OMapIterator for OMapLinkedHash
@@ -114,6 +115,7 @@ func (m *OMapLinkedHash[K, V]) Put(key K, value V) {
 	if pos >= 0 {
 		elems[pos].value = value
 	} else {
+		m.length++
 		entry := &mapEntry[*K, V]{
 			key:   &key,
 			value: value,
@@ -178,12 +180,17 @@ func (m *OMapLinkedHash[K, V]) Delete(key K) {
 				entry.next.prev = entry.prev
 			}
 			m.m[hashedKey] = append(elems[0:pos], elems[pos+1:]...)
+			m.length--
 		}
 	}
 }
 
 func (m *OMapLinkedHash[K, V]) Iterator() OMapIterator[K, V] {
 	return &OMapLinkedHashIterator[K, V]{cursor: m.head, bof: true}
+}
+
+func (m *OMapLinkedHash[K, V]) Len() int {
+	return m.length
 }
 
 // Implement fmt.Stringer

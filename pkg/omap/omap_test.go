@@ -43,17 +43,6 @@ func init() {
 	}
 }
 
-func TestBuiltinDeny(t *testing.T) {
-	defer func() {
-		omap.EnableOMapBuiltin = true
-		if r := recover(); r == nil {
-			t.Fatal("expected to panic, nil found")
-		}
-	}()
-	omap.EnableOMapBuiltin = false
-	_ = omap.NewOMapBuiltin[string, int]()
-}
-
 func validateGet(t *testing.T, m omap.OMap[string, int], key string, expected int) bool {
 	if v, ok := m.Get(key); !ok {
 		t.Errorf("key \"%s\" not found", key)
@@ -107,6 +96,57 @@ func validateIterator[K comparable, V comparable](t *testing.T, m omap.OMap[K, V
 }
 
 //// Tests ////
+
+func TestIteratorToSlice(t *testing.T) {
+	for _, impl := range implementations {
+		t.Run(impl.name, func(t *testing.T) {
+			m := impl.initializerStrInt()
+			m.Put("foo", 10)
+			m.Put("foo", 11)
+			m.Put("foo", 12)
+			m.Put("bar", 20)
+			m.Put("bar", 21)
+			m.Put("bar", 22)
+			m.Put("baz", 30)
+			m.Put("baz", 31)
+			m.Put("baz", 32)
+			if m.Len() != 3 {
+				t.Errorf("expected %T.Len() of 3, found %d", m, m.Len())
+			}
+			itKeys := m.Iterator()
+			itVals := m.Iterator()
+			keys := omap.IteratorKeysToSlice(itKeys)
+			vals := omap.IteratorValuesToSlice(itVals)
+			if len(keys) != 3 {
+				t.Errorf("expected keys size of 3, found %d", len(keys))
+			} else if impl.isOrdered && !(keys[0] == "foo" && keys[1] == "bar" && keys[2] == "baz") {
+				t.Errorf("invalid keys, expected [foo bar baz], found %v", keys)
+			}
+			if len(vals) != 3 {
+				t.Errorf("expected vals size of 3, found %d", len(vals))
+			} else if impl.isOrdered && !(vals[0] == 12 && vals[1] == 22 && vals[2] == 32) {
+				t.Errorf("invalid vals, expected [12 22 32], found %v", vals)
+			}
+			if !itKeys.EOF() {
+				t.Error("expected itKeys to be at EOF")
+			}
+			if !itVals.EOF() {
+				t.Error("expected itVals to be at EOF")
+			}
+		})
+	}
+}
+
+func TestBuiltinDeny(t *testing.T) {
+	defer func() {
+		omap.EnableOMapBuiltin = true
+		if r := recover(); r == nil {
+			t.Fatal("expected to panic, nil found")
+		}
+	}()
+	omap.EnableOMapBuiltin = false
+	_ = omap.NewOMapBuiltin[string, int]()
+}
 
 func TestNewIsOMapLinked(t *testing.T) {
 	exp := reflect.TypeOf(omap.NewOMapLinked[string, int]())

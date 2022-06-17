@@ -75,6 +75,10 @@ func (m *OMapSync[K, V]) Iterator() OMapIterator[K, V] {
 	return &OMapSyncIterator[K, V]{it: m.om.Iterator(), m: m}
 }
 
+func (m *OMapSync[K, V]) Len() int {
+	return m.om.Len()
+}
+
 // Implement fmt.Stringer interface.
 func (m *OMapSync[K, V]) String() string {
 	return toString[K, V]("omap.OMapSync", m.Iterator())
