@@ -73,6 +73,10 @@ func (m *OMapBuiltin[K, V]) Iterator() OMapIterator[K, V] {
 	return it
 }
 
+func (m *OMapBuiltin[K, V]) Len() int {
+	return len(m.m)
+}
+
 // Implement fmt.Stringer
 func (m *OMapBuiltin[K, V]) String() string {
 	return toString[K, V]("omap.OMapBuiltin", m.Iterator())

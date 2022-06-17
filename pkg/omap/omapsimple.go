@@ -70,6 +70,10 @@ func (m *OMapSimple[K, V]) Iterator() OMapIterator[K, V] {
 	return &OMapSimpleIterator[K, V]{i: -1, m: m}
 }
 
+func (m *OMapSimple[K, V]) Len() int {
+	return len(m.m)
+}
+
 // Implement fmt.Stringer
 func (m *OMapSimple[K, V]) String() string {
 	return toString[K, V]("omap.OMapSimple", m.Iterator())

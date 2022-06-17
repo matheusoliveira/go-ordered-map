@@ -24,9 +24,9 @@ type OMapLinkedIterator[K comparable, V any] struct {
 // Return a new OMap based on OMapLinked implementation, see OMapLinked type for more
 // details of the implementation.
 func NewOMapLinked[K comparable, V any]() OMap[K, V] {
-	var m OMapLinked[K, V]
+	m := &OMapLinked[K, V]{}
 	m.init()
-	return &m
+	return m
 }
 
 func (m *OMapLinked[K, V]) init() {
@@ -89,6 +89,10 @@ func (m *OMapLinked[K, V]) Delete(key K) {
 
 func (m *OMapLinked[K, V]) Iterator() OMapIterator[K, V] {
 	return &OMapLinkedIterator[K, V]{cursor: m.head, bof: true}
+}
+
+func (m *OMapLinked[K, V]) Len() int {
+	return len(m.m)
 }
 
 // Implement fmt.Stringer

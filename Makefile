@@ -1,10 +1,16 @@
 .PHONY: default vet test bench fuzz doc doc-api doc-bench pre-release
 
+PATTERN=.
+TEST_PATH=./...
+MIN_COVERAGE=99
+
 default: vet test
 
 test:
-	go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
+	go test -v -race -run=${PATTERN} -covermode=atomic -coverprofile=coverage.out ${TEST_PATH}
 	go tool cover -html=coverage.out -o coverage.html
+	@echo
+	@cat coverage.out | awk '/\s0$$/{notCovered += 1} !/\s0$$/{covered += 1} END{coverPerc=covered / (covered + notCovered) * 100; printf("final coverage report: covered=%d, notCovered=%d, coverage=%.2f%%\n", covered, notCovered, coverPerc); if (coverPerc < ${MIN_COVERAGE}){printf("coverage bellow min acceptable of %.1f%%\n", ${MIN_COVERAGE}); exit 1}}'
 
 vet:
 	go vet ./...
