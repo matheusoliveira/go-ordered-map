@@ -16,10 +16,10 @@ const (
 )
 
 type implDetail struct {
-	name                   string
-	isOrdered              bool
-	isParallelSafe         bool
-	initializerStrStr      func() omultimap.OMultiMap[string, string]
+	name              string
+	isOrdered         bool
+	isParallelSafe    bool
+	initializerStrStr func() omultimap.OMultiMap[string, string]
 }
 
 var implementations []implDetail
@@ -66,16 +66,16 @@ func TestBasicOperations(t *testing.T) {
 			mm := impl.initializerStrStr()
 			fooValExp := []string{"1", "2", "3", "4"}
 			fooKeyExp := make([]string, len(fooValExp))
-			valExp := make([]string, len(fooValExp) * 3)
-			keyExp := make([]string, len(fooValExp) * 3)
+			valExp := make([]string, len(fooValExp)*3)
+			keyExp := make([]string, len(fooValExp)*3)
 			for i, e := range fooValExp {
 				fooKeyExp[i] = "foo"
-				keyExp[i * 3 + 0] = "foo"
-				keyExp[i * 3 + 1] = "bar"
-				keyExp[i * 3 + 2] = "baz"
-				valExp[i * 3 + 0] = e
-				valExp[i * 3 + 1] = e
-				valExp[i * 3 + 2] = e
+				keyExp[i*3+0] = "foo"
+				keyExp[i*3+1] = "bar"
+				keyExp[i*3+2] = "baz"
+				valExp[i*3+0] = e
+				valExp[i*3+1] = e
+				valExp[i*3+2] = e
 				mm.Put("foo", e)
 				mm.Put("bar", e)
 				mm.Put("baz", e)
@@ -124,7 +124,9 @@ func TestDeleteAt(t *testing.T) {
 				mustAssertSlicesEqual(t, "still has other values", omap.IteratorValuesToSlice(mm.Iterator()), "3", "4")
 			}
 			// delete last key
-			if delLast := mm.Iterator(); !delLast.Next() || !delLast.Next() {
+			if delLast := mm.Iterator(); !delLast.Next() {
+				t.Error("delLast should have Next")
+			} else if !delLast.Next() {
 				t.Error("delLast should have Next, twice")
 			} else if err := mm.DeleteAt(delLast); err != nil {
 				t.Errorf("unexpected error: %v", err)
@@ -151,7 +153,7 @@ func TestDeleteAtErrors(t *testing.T) {
 				t.Error("expected DeleteAt of not started iterator to fail")
 			}
 			// try delete an iterator at EOF
-			itEof := mm.Iterator();
+			itEof := mm.Iterator()
 			for itEof.Next() {
 			}
 			if !itEof.EOF() {
@@ -202,7 +204,7 @@ func TestDeleteAtErrors(t *testing.T) {
 						}
 					}
 				}
-				if elems := omap.IteratorValuesToSlice(mmDeleteAllIt.GetValuesOf("to-delete")); elems != nil && len(elems) != 0 {
+				if elems := omap.IteratorValuesToSlice(mmDeleteAllIt.GetValuesOf("to-delete")); len(elems) != 0 {
 					t.Errorf("should not found any value with \"to-delete\" key, found %d values", len(elems))
 				}
 				if err := mmDeleteAllIt.DeleteAt(itTry); err == nil {
@@ -223,7 +225,7 @@ func TestDeleteAtErrors(t *testing.T) {
 				t.Error("expected MustDeleteAt to panic, after call")
 			}()
 			var invalidIt omap.OMapIterator[string, string]
-			mmInvalidIt :=impl.initializerStrStr()
+			mmInvalidIt := impl.initializerStrStr()
 			if err := mmInvalidIt.DeleteAt(invalidIt); err == nil {
 				t.Error("expected mmInvalidIt.DeleteAt to fail")
 			}
