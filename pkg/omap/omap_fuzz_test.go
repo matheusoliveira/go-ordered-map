@@ -59,8 +59,12 @@ func opDelete(t *testing.T, maps []omap.OMap[string, int], key string, val int) 
 
 func validateMapsEquality(t *testing.T, maps []omap.OMap[string, int]) bool {
 	its := make([]omap.OMapIterator[string, int], len(maps))
+	firstLen := maps[0].Len()
 	for i, m := range maps {
 		its[i] = m.Iterator()
+		if m.Len() != firstLen {
+			t.Errorf("first len of %d, but found %d at %T", firstLen, m.Len(), m)
+		}
 	}
 	for nIteration := 0; ; nIteration++ {
 		allHasNext := true
