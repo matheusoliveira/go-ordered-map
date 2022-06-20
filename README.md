@@ -1,6 +1,7 @@
 [![Build status](https://github.com/matheusoliveira/go-ordered-map/actions/workflows/build.yml/badge.svg)](https://github.com/matheusoliveira/go-ordered-map/actions/workflows/build.yml)
 [![Codecov](https://codecov.io/gh/matheusoliveira/go-ordered-map/branch/main/graph/badge.svg?token=H4SjidS9Yq)](https://codecov.io/gh/matheusoliveira/go-ordered-map)
 [![Go Report Card](https://goreportcard.com/badge/github.com/matheusoliveira/go-ordered-map)](https://goreportcard.com/report/github.com/matheusoliveira/go-ordered-map)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/matheusoliveira/go-ordered-map.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/matheusoliveira/go-ordered-map/alerts/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/matheusoliveira/go-ordered-map@main/pkg/omap.svg)](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
