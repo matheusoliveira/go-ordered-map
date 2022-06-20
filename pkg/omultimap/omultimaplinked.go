@@ -46,10 +46,10 @@ func (m *OMultiMapLinked[K, V]) init() {
 
 func (m *OMultiMapLinked[K, V]) Put(key K, value V) {
 	entry := &mapEntry[K, V]{
-		key: key,
+		key:   key,
 		value: value,
-		next: nil,
-		prev: m.tail,
+		next:  nil,
+		prev:  m.tail,
 	}
 	if elems, ok := m.m[key]; ok {
 		m.m[key] = append(elems, entry)
@@ -66,10 +66,10 @@ func (m *OMultiMapLinked[K, V]) Put(key K, value V) {
 }
 
 func (m *OMultiMapLinked[K, V]) GetValuesOf(key K) omap.OMapIterator[K, V] {
-	elems, _ := m.m[key]
+	elems := m.m[key]
 	return &OMultiMapLinkedValuesIterator[K, V]{
 		elems: elems,
-		pos: -1,
+		pos:   -1,
 	}
 }
 
@@ -109,7 +109,7 @@ func (m *OMultiMapLinked[K, V]) DeleteAt(interfaceIt omap.OMapIterator[K, V]) er
 	} else {
 		found := false
 		pos := 0
-		for pos, _ = range elems {
+		for pos = range elems {
 			if elems[pos] == it.cursor {
 				found = true
 				break

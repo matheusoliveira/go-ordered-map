@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-
 //// Utility functions ////
 
 func MarshalJSON[K comparable, V any](it OMapIterator[K, V]) ([]byte, error) {

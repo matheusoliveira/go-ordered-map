@@ -1,8 +1,8 @@
 package omultimap
 
 import (
-	"errors"
 	"encoding/json"
+	"errors"
 	"sync"
 
 	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
@@ -16,11 +16,6 @@ type OMultiMapSync[K comparable, V any] struct {
 type OMultiMapSyncIterator[K comparable, V any] struct {
 	m  *OMultiMapSync[K, V]
 	it omap.OMapIterator[K, V]
-}
-
-type OMultiMapSyncValuesIterator[K comparable, V any] struct {
-	elems []*mapEntry[K, V]
-	pos   int
 }
 
 func NewOMultiMapSync[K comparable, V any]() OMultiMap[K, V] {
