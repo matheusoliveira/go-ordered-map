@@ -8,6 +8,12 @@ import (
 	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
 )
 
+// Implements an OMultiMap with synchronization to be safely called from goroutines without
+// worrying about synchronization.
+//
+// Uses an OMultiMapLinked underneath, and behavior of functions and time complexity are the
+// same. Uses a sync.RWMutex internally to make sure that reads can be run in parallel, while
+// any write operation will block other operations.
 type OMultiMapSync[K comparable, V any] struct {
 	omm  OMultiMap[K, V]
 	lock sync.RWMutex
@@ -63,6 +69,10 @@ func (m *OMultiMapSync[K, V]) MustDeleteAt(interfaceIt omap.OMapIterator[K, V]) 
 func (m *OMultiMapSync[K, V]) Iterator() omap.OMapIterator[K, V] {
 	it := m.omm.Iterator()
 	return &OMultiMapSyncIterator[K, V]{it: it, m: m}
+}
+
+func (m *OMultiMapSync[K, V]) Len() int {
+	return m.omm.Len()
 }
 
 // Implement fmt.Stringer

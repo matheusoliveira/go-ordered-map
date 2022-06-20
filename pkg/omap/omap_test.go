@@ -441,6 +441,30 @@ func TestRaceCondition(t *testing.T) {
 	}
 }
 
+func TestUnmarshalJSONUtilErrAtFirstToken(t *testing.T) {
+	m := omap.New[string, int]()
+	err := omap.UnmarshalJSON(m.Put, []byte("not a valid json"))
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+}
+
+func TestUnmarshalJSONUtilErrAfterFirstKey(t *testing.T) {
+	m := omap.New[string, int]()
+	err := omap.UnmarshalJSON(m.Put, []byte("{\"foo\": 1, bar}"))
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+}
+
+func TestUnmarshalJSONUtilErrNonStringKeyJSON(t *testing.T) {
+	m := omap.New[int, int]()
+	err := omap.UnmarshalJSON(m.Put, []byte("{\"1\": 2}"))
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+}
+
 //// Benchmarks ////
 
 const nValues = 100000

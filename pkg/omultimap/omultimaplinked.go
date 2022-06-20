@@ -6,6 +6,7 @@ import (
 	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
 )
 
+// Create a new OMultiMap using default implementation, currently a OMultiMapLinked.
 func New[K comparable, V any]() OMultiMap[K, V] {
 	return NewOMultiMapLinked[K, V]()
 }
@@ -17,23 +18,29 @@ type mapEntry[K comparable, V any] struct {
 	prev  *mapEntry[K, V]
 }
 
+// OMultiMapLinked implements an OMultiMap using a linked list to navigate through the key/values
+// in same order as originally inserted.
 type OMultiMapLinked[K comparable, V any] struct {
-	m    map[K][]*mapEntry[K, V]
-	head *mapEntry[K, V]
-	tail *mapEntry[K, V]
+	m      map[K][]*mapEntry[K, V]
+	head   *mapEntry[K, V]
+	tail   *mapEntry[K, V]
+	length int
 }
 
+// Iterator for OMultiMapLinked.
 type OMultiMapLinkedIterator[K comparable, V any] struct {
 	m      *OMultiMapLinked[K, V]
 	cursor *mapEntry[K, V]
 	bof    bool
 }
 
+// Values iterator for OMultiMapLinked.
 type OMultiMapLinkedValuesIterator[K comparable, V any] struct {
 	elems []*mapEntry[K, V]
 	pos   int
 }
 
+// Create a new OMultiMapLinked.
 func NewOMultiMapLinked[K comparable, V any]() OMultiMap[K, V] {
 	ret := &OMultiMapLinked[K, V]{}
 	ret.init()
@@ -44,6 +51,8 @@ func (m *OMultiMapLinked[K, V]) init() {
 	m.m = make(map[K][]*mapEntry[K, V])
 }
 
+// Add a given key/value to the map.
+// Complexity: O(1).
 func (m *OMultiMapLinked[K, V]) Put(key K, value V) {
 	entry := &mapEntry[K, V]{
 		key:   key,
@@ -63,8 +72,11 @@ func (m *OMultiMapLinked[K, V]) Put(key K, value V) {
 		m.tail.next = entry
 		m.tail = entry
 	}
+	m.length++
 }
 
+// Get an iterator over all values of a given key.
+// Complexity: O(1).
 func (m *OMultiMapLinked[K, V]) GetValuesOf(key K) omap.OMapIterator[K, V] {
 	elems := m.m[key]
 	return &OMultiMapLinkedValuesIterator[K, V]{
@@ -88,15 +100,20 @@ func (m *OMultiMapLinked[K, V]) deleteEntryInList(entry *mapEntry[K, V]) {
 	}
 }
 
+// Delete all values stored by a giving key.
+// Complexity: O(m) where m is the number of values pointing to the given key.
 func (m *OMultiMapLinked[K, V]) DeleteAll(key K) {
 	if elems, ok := m.m[key]; ok {
 		for _, e := range elems {
 			m.deleteEntryInList(e)
 		}
+		m.length -= len(elems)
 		delete(m.m, key)
 	}
 }
 
+// Delete the value currently pointed by the iterator, returning a non-nil error if failed.
+// Complexity: O(1).
 func (m *OMultiMapLinked[K, V]) DeleteAt(interfaceIt omap.OMapIterator[K, V]) error {
 	if it, ok := interfaceIt.(*OMultiMapLinkedIterator[K, V]); !ok {
 		return errors.New("trying to operate on invalid map iterator")
@@ -122,6 +139,7 @@ func (m *OMultiMapLinked[K, V]) DeleteAt(interfaceIt omap.OMapIterator[K, V]) er
 				m.m[it.Key()] = append(elems[0:pos], elems[pos+1:]...)
 			}
 			m.deleteEntryInList(it.cursor)
+			m.length--
 		} else {
 			return errors.New("inconsistent state, key found but value not present")
 		}
@@ -129,6 +147,8 @@ func (m *OMultiMapLinked[K, V]) DeleteAt(interfaceIt omap.OMapIterator[K, V]) er
 	return nil
 }
 
+// Same as DeleteAt but with panic in case of failure.
+// Complexity: O(1).
 func (m *OMultiMapLinked[K, V]) MustDeleteAt(interfaceIt omap.OMapIterator[K, V]) {
 	err := m.DeleteAt(interfaceIt)
 	if err != nil {
@@ -136,8 +156,15 @@ func (m *OMultiMapLinked[K, V]) MustDeleteAt(interfaceIt omap.OMapIterator[K, V]
 	}
 }
 
+// Return an iterator at the beginning of the map.
 func (m *OMultiMapLinked[K, V]) Iterator() omap.OMapIterator[K, V] {
 	return &OMultiMapLinkedIterator[K, V]{cursor: m.head, bof: true, m: m}
+}
+
+// Returns the length of the map.
+// Complexity: O(1).
+func (m *OMultiMapLinked[K, V]) Len() int {
+	return m.length
 }
 
 // Implement fmt.Stringer

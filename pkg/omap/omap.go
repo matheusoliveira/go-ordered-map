@@ -1,3 +1,14 @@
+// omap package provides a common interface to implement ordered maps, along with a set of
+// implementations.
+//
+// As it is well-known, Go's builtin map iterator order is undefined (consider random).
+// An ordered map (omap for short) is very similar to a builtin map, but with the advantage that
+// iterating the keys or serializing it (e.g. to JSON) will keep the keys in same order as
+// originally provided.
+// There is an small overhead though, mostly in memory, but usually negligible. See benchmarks for
+// a few comparisons among omap implementations and builtin map.
+// A given key can hold only a single value, see omultimap if you need multiple values for the same
+// key.
 package omap
 
 //// Interfaces ////
