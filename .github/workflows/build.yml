@@ -32,3 +32,5 @@ jobs:
         name: codecov-umbrella
         verbose: true
 
+    - name: Goproxy
+      run: curl 'https://proxy.golang.org/github.com/matheusoliveira/go-ordered-map/@latest'
