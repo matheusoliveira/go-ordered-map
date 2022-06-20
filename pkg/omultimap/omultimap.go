@@ -11,7 +11,7 @@ import (
 
 type OMultiMap[K comparable, V any] interface {
 	// Add a given key/value to the map.
-	Put(key K, value V)
+	Put(key K, values ...V)
 	// Get an iterator over all values of a given key.
 	GetValuesOf(key K) omap.OMapIterator[K, V]
 	// Delete all values stored by a giving key.

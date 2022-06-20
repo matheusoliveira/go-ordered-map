@@ -31,10 +31,10 @@ func NewOMultiMapSync[K comparable, V any]() OMultiMap[K, V] {
 	return ret
 }
 
-func (m *OMultiMapSync[K, V]) Put(key K, value V) {
+func (m *OMultiMapSync[K, V]) Put(key K, values ...V) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	m.omm.Put(key, value)
+	m.omm.Put(key, values...)
 }
 
 func (m *OMultiMapSync[K, V]) GetValuesOf(key K) omap.OMapIterator[K, V] {
