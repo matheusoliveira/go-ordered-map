@@ -61,34 +61,36 @@ func TestNewIsOMultiMapLinked(t *testing.T) {
 }
 
 func TestBasicOperations(t *testing.T) {
+	keys := []string{"foo", "bar", "baz"}
+	values := []string{"1", "2", "3", "4"}
+	fooKeyExp := make([]string, len(values))
+	valExp := make([]string, len(values)*3)
+	keyExp := make([]string, len(values)*3)
+	for i, e := range values {
+		fooKeyExp[i] = "foo"
+		for j, k := range keys {
+			keyExp[i*len(keys)+j] = k
+			valExp[i*len(keys)+j] = e
+		}
+	}
 	for _, impl := range implementations {
 		t.Run(impl.name, func(t *testing.T) {
 			mm := impl.initializerStrStr()
-			fooValExp := []string{"1", "2", "3", "4"}
-			fooKeyExp := make([]string, len(fooValExp))
-			valExp := make([]string, len(fooValExp)*3)
-			keyExp := make([]string, len(fooValExp)*3)
-			for i, e := range fooValExp {
-				fooKeyExp[i] = "foo"
-				keyExp[i*3+0] = "foo"
-				keyExp[i*3+1] = "bar"
-				keyExp[i*3+2] = "baz"
-				valExp[i*3+0] = e
-				valExp[i*3+1] = e
-				valExp[i*3+2] = e
-				mm.Put("foo", e)
-				mm.Put("bar", e)
-				mm.Put("baz", e)
+			for i := 0; i < len(keyExp); i++ {
+				mm.Put(keyExp[i], valExp[i])
 			}
 			itFooKey := mm.GetValuesOf("foo")
 			itFooVal := mm.GetValuesOf("foo")
 			itFullKey := mm.Iterator()
 			itFullVal := mm.Iterator()
 			mustAssertSlicesEqual(t, "foo keys", omap.IteratorKeysToSlice(itFooKey), fooKeyExp...)
-			mustAssertSlicesEqual(t, "foo values", omap.IteratorValuesToSlice(itFooVal), fooValExp...)
+			mustAssertSlicesEqual(t, "foo values", omap.IteratorValuesToSlice(itFooVal), values...)
 			mustAssertSlicesEqual(t, "fullmap keys", omap.IteratorKeysToSlice(itFullKey), keyExp...)
 			mustAssertSlicesEqual(t, "fullmap values", omap.IteratorValuesToSlice(itFullVal), valExp...)
 			mustAssertSlicesEqual(t, "EOF", []bool{itFooKey.EOF(), itFooVal.EOF(), itFullKey.EOF(), itFullVal.EOF()}, true, true, true, true)
+			if mm.Len() != len(keyExp) {
+				t.Errorf("expected len of %d, found %d", len(keyExp), mm.Len())
+			}
 		})
 	}
 }

@@ -8,8 +8,11 @@ import (
 	"strings"
 )
 
-//// Utility functions ////
-
+// Iterate over the given iterator it, from the given position, and marshal the key/values into
+// JSON.
+//
+// This is a handy function to construct a json.Marshaler implementation.
+// Note: the iterator will be at EOF after this function returns with success.
 func MarshalJSON[K comparable, V any](it OMapIterator[K, V]) ([]byte, error) {
 	var w bytes.Buffer
 	w.WriteString("{")
@@ -38,6 +41,10 @@ func MarshalJSON[K comparable, V any](it OMapIterator[K, V]) ([]byte, error) {
 	return w.Bytes(), nil
 }
 
+// Process given json at b and for each key/value found, call given putFunc function with same
+// definition of OMap.Put to add the given key/value into a map.
+//
+// This is a handy function to convert a given json to map as json.Unmarshaler interface requires.
 func UnmarshalJSON[K comparable, V any](putFunc func(K, V), b []byte) error {
 	reader := bytes.NewBuffer(b)
 	dec := json.NewDecoder(reader)
@@ -69,6 +76,11 @@ func UnmarshalJSON[K comparable, V any](putFunc func(K, V), b []byte) error {
 	return nil
 }
 
+// Iterate over the given iterator it, from the given position, and marshal the key/values into
+// an string.
+//
+// This is a handy function to implements fmt.Stringfier interface.
+// Note: the iterator will be at EOF after this function returns with success.
 func IteratorToString[K comparable, V any](typeName string, it OMapIterator[K, V]) string {
 	var b strings.Builder
 	b.Grow(len(typeName) + 1)
@@ -92,6 +104,10 @@ func IteratorToString[K comparable, V any](typeName string, it OMapIterator[K, V
 	return b.String()
 }
 
+// Iterate over the given iterator it, from the given position, and store the keys only into an
+// slice of same type.
+//
+// Note: the iterator will be at EOF after this function returns with success.
 func IteratorKeysToSlice[K comparable, V any](it OMapIterator[K, V]) []K {
 	ret := make([]K, 0)
 	for it.Next() {
@@ -100,6 +116,10 @@ func IteratorKeysToSlice[K comparable, V any](it OMapIterator[K, V]) []K {
 	return ret
 }
 
+// Iterate over the given iterator it, from the given position, and store the values only into an
+// slice of same type.
+//
+// Note: the iterator will be at EOF after this function returns with success.
 func IteratorValuesToSlice[K comparable, V any](it OMapIterator[K, V]) []V {
 	ret := make([]V, 0)
 	for it.Next() {
