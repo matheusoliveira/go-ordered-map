@@ -11,7 +11,7 @@ import (
 
 //// Utility functions ////
 
-func marshalJSON[K comparable, V any](it OMapIterator[K, V]) ([]byte, error) {
+func MarshalJSON[K comparable, V any](it OMapIterator[K, V]) ([]byte, error) {
 	var w bytes.Buffer
 	w.WriteString("{")
 	first := true
@@ -39,7 +39,7 @@ func marshalJSON[K comparable, V any](it OMapIterator[K, V]) ([]byte, error) {
 	return w.Bytes(), nil
 }
 
-func unmarshalJSON[K comparable, V any](m OMap[K, V], b []byte) error {
+func UnmarshalJSON[K comparable, V any](putFunc func(K, V), b []byte) error {
 	reader := bytes.NewBuffer(b)
 	dec := json.NewDecoder(reader)
 	t, err := dec.Token()
@@ -64,13 +64,13 @@ func unmarshalJSON[K comparable, V any](m OMap[K, V], b []byte) error {
 			if err != nil {
 				return fmt.Errorf("could not decode value: %w", err)
 			}
-			m.Put(key, value)
+			putFunc(key, value)
 		}
 	}
 	return nil
 }
 
-func toString[K comparable, V any](typeName string, it OMapIterator[K, V]) string {
+func IteratorToString[K comparable, V any](typeName string, it OMapIterator[K, V]) string {
 	var b strings.Builder
 	b.Grow(len(typeName) + 1)
 	b.WriteString(typeName)

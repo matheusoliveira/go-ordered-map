@@ -97,19 +97,19 @@ func (m *OMapLinked[K, V]) Len() int {
 
 // Implement fmt.Stringer
 func (m *OMapLinked[K, V]) String() string {
-	return toString[K, V]("omap.OMapLinked", m.Iterator())
+	return IteratorToString[K, V]("omap.OMapLinked", m.Iterator())
 }
 
 // Implement json.Marshaler interface.
 func (m OMapLinked[K, V]) MarshalJSON() ([]byte, error) {
-	buffer, err := marshalJSON(m.Iterator())
+	buffer, err := MarshalJSON(m.Iterator())
 	return buffer, err
 }
 
 // Implement json.Unmarshaler interface.
 func (m *OMapLinked[K, V]) UnmarshalJSON(b []byte) error {
 	m.init()
-	return unmarshalJSON[K, V](m, b)
+	return UnmarshalJSON[K, V](m.Put, b)
 }
 
 func (it *OMapLinkedIterator[K, V]) Next() bool {

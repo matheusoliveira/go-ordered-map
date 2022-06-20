@@ -81,7 +81,7 @@ func (m *OMapSync[K, V]) Len() int {
 
 // Implement fmt.Stringer interface.
 func (m *OMapSync[K, V]) String() string {
-	return toString[K, V]("omap.OMapSync", m.Iterator())
+	return IteratorToString[K, V]("omap.OMapSync", m.Iterator())
 }
 
 // Implement json.Marshaler interface.
@@ -95,8 +95,8 @@ func (m *OMapSync[K, V]) MarshalJSON() ([]byte, error) {
 // Implement json.Unmarshaler interface.
 func (m *OMapSync[K, V]) UnmarshalJSON(b []byte) error {
 	m.init()
-	m.mx.RLock()
-	defer m.mx.RUnlock()
+	m.mx.Lock()
+	defer m.mx.Unlock()
 	err := json.Unmarshal(b, &m.om)
 	return err
 }

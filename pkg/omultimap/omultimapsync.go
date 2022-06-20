@@ -2,6 +2,7 @@ package omultimap
 
 import (
 	"errors"
+	"encoding/json"
 	"sync"
 
 	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
@@ -67,6 +68,29 @@ func (m *OMultiMapSync[K, V]) MustDeleteAt(interfaceIt omap.OMapIterator[K, V]) 
 func (m *OMultiMapSync[K, V]) Iterator() omap.OMapIterator[K, V] {
 	it := m.omm.Iterator()
 	return &OMultiMapSyncIterator[K, V]{it: it, m: m}
+}
+
+// Implement fmt.Stringer
+func (m *OMultiMapSync[K, V]) String() string {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	return omap.IteratorToString[K, V]("omultimap.OMultiMapSync", m.omm.Iterator())
+}
+
+// Implement json.Marshaler interface.
+func (m *OMultiMapSync[K, V]) MarshalJSON() ([]byte, error) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	buffer, err := omap.MarshalJSON(m.omm.Iterator())
+	return buffer, err
+}
+
+// Implement json.Unmarshaler interface.
+func (m *OMultiMapSync[K, V]) UnmarshalJSON(b []byte) error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	err := json.Unmarshal(b, &m.omm)
+	return err
 }
 
 //// OMultiMap Iterator ////

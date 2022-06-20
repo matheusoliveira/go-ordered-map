@@ -6,7 +6,7 @@ import (
 
 func TestInvalidJSONAtFirstToken(t *testing.T) {
 	m := New[string, int]()
-	err := unmarshalJSON(m, []byte("not a valid json"))
+	err := UnmarshalJSON(m.Put, []byte("not a valid json"))
 	if err == nil {
 		t.Fatal("expected an error")
 	}
@@ -14,7 +14,7 @@ func TestInvalidJSONAtFirstToken(t *testing.T) {
 
 func TestInvalidJSONAfterFirstKey(t *testing.T) {
 	m := New[string, int]()
-	err := unmarshalJSON(m, []byte("{\"foo\": 1, bar}"))
+	err := UnmarshalJSON(m.Put, []byte("{\"foo\": 1, bar}"))
 	if err == nil {
 		t.Fatal("expected an error")
 	}
@@ -22,7 +22,7 @@ func TestInvalidJSONAfterFirstKey(t *testing.T) {
 
 func TestNonStringKeyJSON(t *testing.T) {
 	m := New[int, int]()
-	err := unmarshalJSON(m, []byte("{\"1\": 2}"))
+	err := UnmarshalJSON(m.Put, []byte("{\"1\": 2}"))
 	if err == nil {
 		t.Fatal("expected an error")
 	}
