@@ -1,5 +1,6 @@
 [![Build status](https://github.com/matheusoliveira/go-ordered-map/actions/workflows/build.yml/badge.svg)](https://github.com/matheusoliveira/go-ordered-map/actions/workflows/build.yml)
 [![Codecov](https://codecov.io/gh/matheusoliveira/go-ordered-map/branch/main/graph/badge.svg?token=H4SjidS9Yq)](https://codecov.io/gh/matheusoliveira/go-ordered-map)
+[![Go Report Card](https://goreportcard.com/badge/github.com/matheusoliveira/go-ordered-map)](https://goreportcard.com/report/github.com/matheusoliveira/go-ordered-map)
 
 # omap
 

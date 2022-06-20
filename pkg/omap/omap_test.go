@@ -94,7 +94,7 @@ func validateIterator[K comparable, V comparable](t *testing.T, m omap.OMap[K, V
 			}
 		}
 		if exp.Key != key {
-			t.Errorf("expecting key \"%v\" at postion %d, key \"%v\" found", exp.Key, i, key)
+			t.Errorf("expecting key \"%v\" at position %d, key \"%v\" found", exp.Key, i, key)
 		}
 		if exp.Value != value {
 			t.Errorf("invalid value for key \"%v\", at position %d, expected %v, found %v", key, i, exp.Value, value)
