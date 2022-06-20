@@ -1,0 +1,61 @@
+?   	github.com/matheusoliveira/go-ordered-map	[no test files]
+goos: linux
+goarch: amd64
+pkg: github.com/matheusoliveira/go-ordered-map/pkg/omap
+cpu: Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz
+BenchmarkIteration/map-8         	    3936	   1399521 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIteration/Builtin-8     	     303	  19250757 ns/op	     201 B/op	       4 allocs/op
+BenchmarkIteration/Simple-8      	     500	  12606482 ns/op	      16 B/op	       1 allocs/op
+BenchmarkIteration/Linked-8      	    7786	    848627 ns/op	      16 B/op	       1 allocs/op
+BenchmarkIteration/LinkedHash-8  	    7083	    844225 ns/op	      16 B/op	       1 allocs/op
+BenchmarkIteration/Sync-8        	    2134	   2827290 ns/op	      48 B/op	       2 allocs/op
+BenchmarkMarshalJSON/map-8       	    1164	   5449427 ns/op	 1010914 B/op	   20006 allocs/op
+BenchmarkMarshalJSON/Builtin-8   	     962	   6347832 ns/op	 1134340 B/op	   20010 allocs/op
+BenchmarkMarshalJSON/Simple-8    	    1009	   6163324 ns/op	  857160 B/op	   39762 allocs/op
+BenchmarkMarshalJSON/Linked-8    	    1328	   4773561 ns/op	  860148 B/op	   39761 allocs/op
+BenchmarkMarshalJSON/LinkedHash-8         	    1280	   5021098 ns/op	  865523 B/op	   39762 allocs/op
+BenchmarkMarshalJSON/Sync-8               	    1123	   5801274 ns/op	  990457 B/op	   39764 allocs/op
+BenchmarkShortStrKeysPut/map-8            	     219	  29021513 ns/op	 8088043 B/op	    3999 allocs/op
+BenchmarkShortStrKeysPut/Builtin-8        	     214	  27240396 ns/op	 8087120 B/op	    3997 allocs/op
+BenchmarkShortStrKeysPut/Simple-8         	     100	  52066508 ns/op	17028371 B/op	    4018 allocs/op
+BenchmarkShortStrKeysPut/Linked-8         	     132	  55644086 ns/op	12887104 B/op	  103997 allocs/op
+BenchmarkShortStrKeysPut/LinkedHash-8     	      78	  65659897 ns/op	16530445 B/op	  404046 allocs/op
+BenchmarkShortStrKeysPut/Sync-8           	      96	  57953905 ns/op	12888188 B/op	  104003 allocs/op
+BenchmarkLargeStrKeysPut/map-8            	       6	 915548530 ns/op	 8090290 B/op	    4010 allocs/op
+BenchmarkLargeStrKeysPut/Builtin-8        	       6	 933213966 ns/op	 8093778 B/op	    4029 allocs/op
+BenchmarkLargeStrKeysPut/Simple-8         	       5	1148190670 ns/op	17030152 B/op	    4027 allocs/op
+BenchmarkLargeStrKeysPut/Linked-8         	       5	1033555280 ns/op	12891305 B/op	  104017 allocs/op
+BenchmarkLargeStrKeysPut/LinkedHash-8     	       6	1009584296 ns/op	16533028 B/op	  404057 allocs/op
+BenchmarkLargeStrKeysPut/Sync-8           	       5	1106828341 ns/op	12884448 B/op	  103985 allocs/op
+BenchmarkLargeStrKeysPutGen/map-8         	      33	 172837803 ns/op	401134506 B/op	   40082 allocs/op
+BenchmarkLargeStrKeysPutGen/Builtin-8     	      30	 171893459 ns/op	401133821 B/op	   40080 allocs/op
+BenchmarkLargeStrKeysPutGen/Simple-8      	      30	 205032312 ns/op	401819511 B/op	   40101 allocs/op
+BenchmarkLargeStrKeysPutGen/Linked-8      	      28	 179232175 ns/op	401614090 B/op	   50081 allocs/op
+BenchmarkLargeStrKeysPutGen/LinkedHash-8  	      28	 183706741 ns/op	401999293 B/op	   80112 allocs/op
+BenchmarkLargeStrKeysPutGen/Sync-8        	      32	 181802519 ns/op	401614492 B/op	   50084 allocs/op
+BenchmarkLargeStrKeysGet/map-8            	 1470026	      3609 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLargeStrKeysGet/Builtin-8        	 1769174	      3978 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLargeStrKeysGet/Simple-8         	 1911117	      3221 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLargeStrKeysGet/Linked-8         	 1826122	      3221 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLargeStrKeysGet/LinkedHash-8     	 1000000	      5294 ns/op	      16 B/op	       1 allocs/op
+BenchmarkLargeStrKeysGet/Sync-8           	 1747059	      3164 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLargeStrKeysIterate/Builtin-8    	     345	  17452293 ns/op	     200 B/op	       4 allocs/op
+BenchmarkLargeStrKeysIterate/Simple-8     	      31	 200420724 ns/op	      16 B/op	       1 allocs/op
+BenchmarkLargeStrKeysIterate/Linked-8     	   17079	    332097 ns/op	      16 B/op	       1 allocs/op
+BenchmarkLargeStrKeysIterate/LinkedHash-8 	   21812	    265814 ns/op	      16 B/op	       1 allocs/op
+BenchmarkLargeStrKeysIterate/Sync-8       	    2899	   1939563 ns/op	      48 B/op	       2 allocs/op
+BenchmarkLargeStrKeysPutGet/map-8         	       9	 597743002 ns/op	 8089458 B/op	    4006 allocs/op
+BenchmarkLargeStrKeysPutGet/Builtin-8     	       8	 704752021 ns/op	 8082226 B/op	    3973 allocs/op
+BenchmarkLargeStrKeysPutGet/Simple-8      	       7	 813976451 ns/op	17035262 B/op	    4051 allocs/op
+BenchmarkLargeStrKeysPutGet/Linked-8      	       7	 817070427 ns/op	12883924 B/op	  103981 allocs/op
+BenchmarkLargeStrKeysPutGet/LinkedHash-8  	       6	 925364101 ns/op	18131789 B/op	  504052 allocs/op
+BenchmarkLargeStrKeysPutGet/Sync-8        	       7	 786297455 ns/op	12886646 B/op	  103995 allocs/op
+BenchmarkLargeObjectKey/map-8             	      36	 157263414 ns/op	410275740 B/op	   10211 allocs/op
+BenchmarkLargeObjectKey/Builtin-8         	      24	 241444763 ns/op	410358049 B/op	   10217 allocs/op
+BenchmarkLargeObjectKey/Simple-8          	       9	 612520670 ns/op	1935593816 B/op	   10237 allocs/op
+BenchmarkLargeObjectKey/Linked-8          	      16	 340107150 ns/op	819876043 B/op	   20215 allocs/op
+BenchmarkLargeObjectKey/LinkedHash-8      	      28	 198635101 ns/op	820759129 B/op	   40308 allocs/op
+BenchmarkLargeObjectKey/Sync-8            	      14	 381237194 ns/op	819876630 B/op	   20221 allocs/op
+PASS
+ok  	github.com/matheusoliveira/go-ordered-map/pkg/omap	417.935s
+?   	github.com/matheusoliveira/go-ordered-map/sample	[no test files]
