@@ -52,27 +52,43 @@ func (m *OMultiMapLinked[K, V]) init() {
 }
 
 // Add a given key/value to the map.
-// Complexity: O(1).
-func (m *OMultiMapLinked[K, V]) Put(key K, value V) {
-	entry := &mapEntry[K, V]{
-		key:   key,
-		value: value,
-		next:  nil,
-		prev:  m.tail,
+// Complexity: O(1), for each value.
+func (m *OMultiMapLinked[K, V]) Put(key K, values ...V) {
+	if len(values) == 0 {
+		return
 	}
+	var buffer []*mapEntry[K, V]
 	if elems, ok := m.m[key]; ok {
-		m.m[key] = append(elems, entry)
+		// grow the slice (copy seems to be faster than append)
+		tmp := make([]*mapEntry[K, V], len(elems) + len(values))
+		copy(tmp, elems)
+		m.m[key] = tmp
+		buffer = tmp[len(elems):]
 	} else {
-		m.m[key] = []*mapEntry[K, V]{entry}
+		buffer = make([]*mapEntry[K, V], len(values))
+		m.m[key] = buffer
+	}
+	m.length += len(values)
+	prev := m.tail
+	for i, value := range values {
+		entry := &mapEntry[K, V]{
+			key:   key,
+			value: value,
+			next:  nil,
+			prev:  prev,
+		}
+		buffer[i] = entry
+		if prev != nil {
+			prev.next = entry
+		}
+		prev = entry
 	}
 	if m.head == nil {
-		m.head = entry
-		m.tail = entry
+		m.head = buffer[0]
+		m.tail = prev
 	} else {
-		m.tail.next = entry
-		m.tail = entry
+		m.tail = prev
 	}
-	m.length++
 }
 
 // Get an iterator over all values of a given key.
@@ -181,7 +197,7 @@ func (m OMultiMapLinked[K, V]) MarshalJSON() ([]byte, error) {
 // Implement json.Unmarshaler interface.
 func (m *OMultiMapLinked[K, V]) UnmarshalJSON(b []byte) error {
 	m.init()
-	return omap.UnmarshalJSON[K, V](m.Put, b)
+	return omap.UnmarshalJSON[K, V](func(key K, val V){ m.Put(key, val) }, b)
 }
 
 //// OMultiMap Iterator ////

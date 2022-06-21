@@ -76,6 +76,10 @@ func TestBasicOperations(t *testing.T) {
 	for _, impl := range implementations {
 		t.Run(impl.name, func(t *testing.T) {
 			mm := impl.initializerStrStr()
+			// no-op
+			mm.Put("foo")
+			mm.Put("x")
+			// add key/val pairs
 			for i := 0; i < len(keyExp); i++ {
 				mm.Put(keyExp[i], valExp[i])
 			}
@@ -99,9 +103,7 @@ func TestDeleteAt(t *testing.T) {
 	for _, impl := range implementations {
 		t.Run(impl.name, func(t *testing.T) {
 			mm := impl.initializerStrStr()
-			mm.Put("foo", "1")
-			mm.Put("foo", "2")
-			mm.Put("foo", "3")
+			mm.Put("foo", "1", "2", "3")
 			mm.Put("foo", "4")
 			foos := omap.IteratorValuesToSlice(mm.GetValuesOf("foo"))
 			mustAssertSlicesEqual(t, "fullmap", foos, "1", "2", "3", "4")
@@ -178,9 +180,7 @@ func TestDeleteAtErrors(t *testing.T) {
 			}
 			// delete from iterator and try to delete again, should fail
 			mmNotFoundOne := impl.initializerStrStr()
-			mmNotFoundOne.Put("delete-one", "1")
-			mmNotFoundOne.Put("delete-one", "2")
-			mmNotFoundOne.Put("delete-one", "3")
+			mmNotFoundOne.Put("delete-one", "1", "2", "3")
 			if itNotFoundOne := mmNotFoundOne.Iterator(); !itNotFoundOne.Next() {
 				t.Error("expected next to return true")
 			} else if err := mmNotFoundOne.DeleteAt(itNotFoundOne); err != nil {
@@ -190,9 +190,7 @@ func TestDeleteAtErrors(t *testing.T) {
 			}
 			// delete all of a given key and try deleting it again from a previous iterator
 			mmDeleteAllIt := impl.initializerStrStr()
-			mmDeleteAllIt.Put("to-delete", "1")
-			mmDeleteAllIt.Put("to-delete", "2")
-			mmDeleteAllIt.Put("to-delete", "3")
+			mmDeleteAllIt.Put("to-delete", "1", "2", "3")
 			mmDeleteAllIt.Put("to-keep", "1")
 			itTry := mmDeleteAllIt.Iterator()
 			itTry.Next()
