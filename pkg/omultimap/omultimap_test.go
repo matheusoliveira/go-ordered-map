@@ -60,6 +60,20 @@ func TestNewIsOMultiMapLinked(t *testing.T) {
 	}
 }
 
+func TestMultiPut(t *testing.T) {
+	for _, impl := range implementations {
+		t.Run(impl.name, func(t *testing.T) {
+			mm := impl.initializerStrStr()
+			mm.Put("x")
+			mm.Put("x", "1", "2", "3")
+			mm.Put("y", "4", "5", "6")
+			mm.Put("x", "7", "8", "9")
+			mustAssertSlicesEqual(t, "keys", omap.IteratorKeysToSlice(mm.Iterator()), "x", "x", "x", "y", "y", "y", "x", "x", "x")
+			mustAssertSlicesEqual(t, "keys", omap.IteratorValuesToSlice(mm.Iterator()), "1", "2", "3", "4", "5", "6", "7", "8", "9")
+		})
+	}
+}
+
 func TestBasicOperations(t *testing.T) {
 	keys := []string{"foo", "bar", "baz"}
 	values := []string{"1", "2", "3", "4"}
