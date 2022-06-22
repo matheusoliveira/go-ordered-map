@@ -31,4 +31,8 @@ func main() {
 	if string(output) == string(input) {
 		fmt.Println("Sucess!")
 	}
+	// reverse iterator
+	for it := m.Iterator().MoveBack(); it.Prev(); {
+		fmt.Printf("%s = %d\n", it.Key(), it.Value())
+	}
 }

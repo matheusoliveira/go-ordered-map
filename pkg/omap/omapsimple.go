@@ -121,3 +121,22 @@ func (it OMapSimpleIterator[K, V]) Value() V {
 	key := it.Key()
 	return it.m.m[key]
 }
+
+func (it OMapSimpleIterator[K, V]) IsValid() bool {
+	return it.i >= 0 && it.i < len(it.m.keys)
+}
+
+func (it *OMapSimpleIterator[K, V]) MoveFront() OMapIterator[K, V] {
+	it.i = -1
+	return it
+}
+
+func (it *OMapSimpleIterator[K, V]) MoveBack() OMapIterator[K, V] {
+	it.i = len(it.m.keys)
+	return it
+}
+
+func (it *OMapSimpleIterator[K, V]) Prev() bool {
+	it.i--
+	return it.IsValid()
+}

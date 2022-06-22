@@ -2,6 +2,7 @@ package omultimap
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
 )
@@ -52,7 +53,7 @@ func (m *OMultiMapLinked[K, V]) init() {
 }
 
 // Add a given key/value to the map.
-// Complexity: O(1), for each value.
+// Complexity: O(1), for each value in values slice.
 func (m *OMultiMapLinked[K, V]) Put(key K, values ...V) {
 	if len(values) == 0 {
 		return
@@ -60,7 +61,7 @@ func (m *OMultiMapLinked[K, V]) Put(key K, values ...V) {
 	var buffer []*mapEntry[K, V]
 	if elems, ok := m.m[key]; ok {
 		// grow the slice (copy seems to be faster than append)
-		tmp := make([]*mapEntry[K, V], len(elems) + len(values))
+		tmp := make([]*mapEntry[K, V], len(elems)+len(values))
 		copy(tmp, elems)
 		m.m[key] = tmp
 		buffer = tmp[len(elems):]
@@ -128,37 +129,101 @@ func (m *OMultiMapLinked[K, V]) DeleteAll(key K) {
 	}
 }
 
-// Delete the value currently pointed by the iterator, returning a non-nil error if failed.
-// Complexity: O(1).
-func (m *OMultiMapLinked[K, V]) DeleteAt(interfaceIt omap.OMapIterator[K, V]) error {
-	if it, ok := interfaceIt.(*OMultiMapLinkedIterator[K, V]); !ok {
-		return errors.New("trying to operate on invalid map iterator")
+func (m *OMultiMapLinked[K, V]) getIteratorEntry(interfaceIt omap.OMapIterator[K, V]) (it *OMultiMapLinkedIterator[K, V], elems []*mapEntry[K, V], pos int, err error) {
+	var ok bool
+	elems = nil
+	pos = -1
+	if it, ok = interfaceIt.(*OMultiMapLinkedIterator[K, V]); !ok {
+		err = fmt.Errorf("%w - expected OMultiMapLinkedIterator found %T", omap.ErrInvalidIteratorType, interfaceIt)
+		return
 	} else if it.m != m {
-		return errors.New("trying to operate on different map iterator")
+		err = omap.ErrInvalidIteratorMap
+		return
 	} else if it.bof || it.cursor == nil {
-		return errors.New("iterator not positionated")
-	} else if elems, ok := m.m[it.Key()]; !ok {
-		return errors.New("inconsistent state, key not found")
+		err = omap.ErrInvalidIteratorPos
+		return
+	} else if elems, ok = m.m[it.Key()]; !ok {
+		err = fmt.Errorf("%w - key not found", omap.ErrInvalidIteratorKey)
+		return
 	} else {
 		found := false
-		pos := 0
 		for pos = range elems {
 			if elems[pos] == it.cursor {
 				found = true
 				break
 			}
 		}
-		if found {
-			if len(elems) == 1 {
-				delete(m.m, it.Key())
-			} else {
-				m.m[it.Key()] = append(elems[0:pos], elems[pos+1:]...)
-			}
-			m.deleteEntryInList(it.cursor)
-			m.length--
+		if !found {
+			pos = -1
+			err = fmt.Errorf("%w - key found but specific entry not present", omap.ErrInvalidIteratorKey)
+			return
 		} else {
-			return errors.New("inconsistent state, key found but value not present")
+			// all good
+			return
 		}
+	}
+}
+
+// Delete the value currently pointed by the iterator, returning a non-nil error if failed.
+// Complexity: O(1).
+func (m *OMultiMapLinked[K, V]) DeleteAt(interfaceIt omap.OMapIterator[K, V]) error {
+	it, elems, pos, err := m.getIteratorEntry(interfaceIt)
+	if err != nil {
+		return err
+	}
+	if len(elems) == 1 {
+		delete(m.m, it.Key())
+	} else {
+		m.m[it.Key()] = append(elems[0:pos], elems[pos+1:]...)
+	}
+	m.deleteEntryInList(it.cursor)
+	m.length--
+	return nil
+}
+
+// Add a given key/value to the map, after the entry pointed by iterator.
+// Complexity: O(1).
+func (m *OMultiMapLinked[K, V]) PutAfter(interfaceIt omap.OMapIterator[K, V], key K, value V) error {
+	it, elems, pos, err := m.getIteratorEntry(interfaceIt)
+	if err != nil {
+		if !(errors.Is(err, omap.ErrInvalidIteratorPos) && it != nil && it.bof) {
+			return err
+		}
+	}
+	entry := &mapEntry[K, V]{
+		key:   key,
+		value: value,
+	}
+	if !it.bof {
+		entry.prev = elems[pos]
+		entry.next = entry.prev.next
+		if entry.prev.next != nil {
+			entry.prev.next.prev = entry
+		}
+		entry.prev.next = entry
+	} else {
+		entry.prev = nil
+		entry.next = m.head
+	}
+	if it.IsValid() && it.Key() == key {
+		tmp := make([]*mapEntry[K, V], 0, len(elems) + 1)
+		tmp = append(tmp, elems[0:pos+1]...)
+		tmp = append(tmp, entry)
+		tmp = append(tmp, elems[pos+1:]...)
+		m.m[key] = tmp
+	} else if elemsK, ok := m.m[key]; ok {
+		m.m[key] = append(elemsK, entry)
+	} else {
+		m.m[key] = []*mapEntry[K, V]{entry}
+	}
+	// update map head and tail
+	if m.head == nil {
+		m.head = entry
+		m.tail = entry
+	} else if it.bof {
+		m.head = entry
+	} else if m.tail == entry.prev {
+		m.tail = entry
 	}
 	return nil
 }
@@ -197,7 +262,7 @@ func (m OMultiMapLinked[K, V]) MarshalJSON() ([]byte, error) {
 // Implement json.Unmarshaler interface.
 func (m *OMultiMapLinked[K, V]) UnmarshalJSON(b []byte) error {
 	m.init()
-	return omap.UnmarshalJSON[K, V](func(key K, val V){ m.Put(key, val) }, b)
+	return omap.UnmarshalJSON[K, V](func(key K, val V) { m.Put(key, val) }, b)
 }
 
 //// OMultiMap Iterator ////
@@ -223,6 +288,36 @@ func (it *OMultiMapLinkedIterator[K, V]) Value() V {
 	return it.cursor.value
 }
 
+func (it *OMultiMapLinkedIterator[K, V]) IsValid() bool {
+	return !it.bof && it.cursor != nil
+}
+
+func (it *OMultiMapLinkedIterator[K, V]) MoveFront() omap.OMapIterator[K, V] {
+	it.bof = true
+	it.cursor = it.m.head
+	return it
+}
+
+func (it *OMultiMapLinkedIterator[K, V]) MoveBack() omap.OMapIterator[K, V] {
+	it.bof = false
+	it.cursor = nil
+	return it
+}
+
+func (it *OMultiMapLinkedIterator[K, V]) Prev() bool {
+	if it.bof {
+		return false
+	} else if it.cursor == nil {
+		it.cursor = it.m.tail
+	} else {
+		it.cursor = it.cursor.prev
+	}
+	if it.cursor == nil {
+		it.bof = true
+	}
+	return it.IsValid()
+}
+
 //// Values Iterator ////
 
 func (it *OMultiMapLinkedValuesIterator[K, V]) Next() bool {
@@ -243,4 +338,23 @@ func (it *OMultiMapLinkedValuesIterator[K, V]) Key() K {
 
 func (it *OMultiMapLinkedValuesIterator[K, V]) Value() V {
 	return it.elems[it.pos].value
+}
+
+func (it OMultiMapLinkedValuesIterator[K, V]) IsValid() bool {
+	return it.pos >= 0 && it.pos < len(it.elems)
+}
+
+func (it *OMultiMapLinkedValuesIterator[K, V]) MoveFront() omap.OMapIterator[K, V] {
+	it.pos = -1
+	return it
+}
+
+func (it *OMultiMapLinkedValuesIterator[K, V]) MoveBack() omap.OMapIterator[K, V] {
+	it.pos = len(it.elems)
+	return it
+}
+
+func (it *OMultiMapLinkedValuesIterator[K, V]) Prev() bool {
+	it.pos--
+	return it.IsValid()
 }

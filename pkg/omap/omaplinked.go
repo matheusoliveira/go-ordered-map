@@ -17,6 +17,7 @@ type OMapLinked[K comparable, V any] struct {
 
 // Implements OMapIterator for OMapLinked.
 type OMapLinkedIterator[K comparable, V any] struct {
+	m      *OMapLinked[K, V]
 	cursor *mapEntry[K, V]
 	bof    bool
 }
@@ -88,7 +89,7 @@ func (m *OMapLinked[K, V]) Delete(key K) {
 }
 
 func (m *OMapLinked[K, V]) Iterator() OMapIterator[K, V] {
-	return &OMapLinkedIterator[K, V]{cursor: m.head, bof: true}
+	return &OMapLinkedIterator[K, V]{m: m, cursor: m.head, bof: true}
 }
 
 func (m *OMapLinked[K, V]) Len() int {
@@ -118,7 +119,8 @@ func (it *OMapLinkedIterator[K, V]) Next() bool {
 	} else {
 		it.bof = false
 	}
-	return it.cursor != nil
+	//return it.cursor != nil
+	return it.IsValid()
 }
 
 func (it *OMapLinkedIterator[K, V]) EOF() bool {
@@ -131,4 +133,34 @@ func (it *OMapLinkedIterator[K, V]) Key() K {
 
 func (it *OMapLinkedIterator[K, V]) Value() V {
 	return it.cursor.value
+}
+
+func (it *OMapLinkedIterator[K, V]) IsValid() bool {
+	return !it.bof && it.cursor != nil
+}
+
+func (it *OMapLinkedIterator[K, V]) MoveFront() OMapIterator[K, V] {
+	it.bof = true
+	it.cursor = it.m.head
+	return it
+}
+
+func (it *OMapLinkedIterator[K, V]) MoveBack() OMapIterator[K, V] {
+	it.bof = false
+	it.cursor = nil
+	return it
+}
+
+func (it *OMapLinkedIterator[K, V]) Prev() bool {
+	if it.bof {
+		return false
+	} else if it.cursor == nil {
+		it.cursor = it.m.tail
+	} else {
+		it.cursor = it.cursor.prev
+	}
+	if it.cursor == nil {
+		it.bof = true
+	}
+	return it.IsValid()
 }
