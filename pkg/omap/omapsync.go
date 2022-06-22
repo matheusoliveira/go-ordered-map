@@ -126,3 +126,27 @@ func (it OMapSyncIterator[K, V]) Key() K {
 func (it OMapSyncIterator[K, V]) Value() V {
 	return it.it.Value()
 }
+
+func (it OMapSyncIterator[K, V]) IsValid() bool {
+	return it.it.IsValid()
+}
+
+func (it *OMapSyncIterator[K, V]) MoveFront() OMapIterator[K, V] {
+	it.m.mx.RLock()
+	defer it.m.mx.RUnlock()
+	it.it.MoveFront()
+	return it
+}
+
+func (it *OMapSyncIterator[K, V]) MoveBack() OMapIterator[K, V] {
+	it.m.mx.RLock()
+	defer it.m.mx.RUnlock()
+	it.it.MoveBack()
+	return it
+}
+
+func (it *OMapSyncIterator[K, V]) Prev() bool {
+	it.m.mx.RLock()
+	defer it.m.mx.RUnlock()
+	return it.it.Prev()
+}

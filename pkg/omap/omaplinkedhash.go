@@ -33,6 +33,7 @@ type OMapLinkedHash[K comparable, V any] struct {
 type OMapLinkedHashIterator[K comparable, V any] struct {
 	cursor *mapEntry[*K, V]
 	bof    bool
+	m      *OMapLinkedHash[K, V]
 }
 
 // Return a new OMap based on OMapLinkedHash implementation, see OMapLinkedHash type for more
@@ -186,7 +187,7 @@ func (m *OMapLinkedHash[K, V]) Delete(key K) {
 }
 
 func (m *OMapLinkedHash[K, V]) Iterator() OMapIterator[K, V] {
-	return &OMapLinkedHashIterator[K, V]{cursor: m.head, bof: true}
+	return &OMapLinkedHashIterator[K, V]{m: m, cursor: m.head, bof: true}
 }
 
 func (m *OMapLinkedHash[K, V]) Len() int {
@@ -231,22 +232,32 @@ func (it *OMapLinkedHashIterator[K, V]) Value() V {
 	return it.cursor.value
 }
 
-/*
-// hashString computes the Fowler–Noll–Vo hash of s.
-// Copy from go/src/cmd/vendor/golang.org/x/tools/go/types/typeutil/map.go:252
-func hashString(s string) uint32 {
-	var h uint32
-	if len(s) < 32 {
-		for i := 0; i < len(s); i++ {
-			h ^= uint32(s[i])
-			h *= 16777619
-		}
-	} else {
-		for i := 0; i < len(s); i += 2 {
-			h ^= uint32(s[i])
-			h *= 16777619
-		}
-	}
-	return h
+func (it *OMapLinkedHashIterator[K, V]) IsValid() bool {
+	return !it.bof && it.cursor != nil
 }
-*/
+
+func (it *OMapLinkedHashIterator[K, V]) MoveFront() OMapIterator[K, V] {
+	it.bof = true
+	it.cursor = it.m.head
+	return it
+}
+
+func (it *OMapLinkedHashIterator[K, V]) MoveBack() OMapIterator[K, V] {
+	it.bof = false
+	it.cursor = nil
+	return it
+}
+
+func (it *OMapLinkedHashIterator[K, V]) Prev() bool {
+	if it.bof {
+		return false
+	} else if it.cursor == nil {
+		it.cursor = it.m.tail
+	} else {
+		it.cursor = it.cursor.prev
+	}
+	if it.cursor == nil {
+		it.bof = true
+	}
+	return it.IsValid()
+}

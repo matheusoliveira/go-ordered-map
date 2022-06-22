@@ -11,11 +11,16 @@
 // key.
 package omap
 
+import (
+	"errors"
+	"fmt"
+)
+
 //// Interfaces ////
 
 // Iterator over OMap.
 type OMapIterator[K comparable, V any] interface {
-	// Iterate to the next record, returning true if the record was found and false otherwise.
+	// Iterate to the next record, returning true if a record was found and false otherwise.
 	Next() bool
 	// Returns true if the iterator is past the last record.
 	EOF() bool
@@ -23,6 +28,14 @@ type OMapIterator[K comparable, V any] interface {
 	Key() K
 	// Returns the value pointing to the current record.
 	Value() V
+	// Returns true if the iterator is positioned in a valid position (e.g. not BOF/EOF)
+	IsValid() bool
+	// Moves the iterator to the first position (BOF), and return itself (for easy of use)
+	MoveFront() OMapIterator[K, V]
+	// Moves the iterator to the last position (EOF), and return itself (for easy of use)
+	MoveBack() OMapIterator[K, V]
+	// Moves iterator backwards, returning true if a record was found and false otherwise.
+	Prev() bool
 }
 
 // OMap is an ordered map that holds key/value and is able to iterate over the whole data-set
@@ -50,3 +63,14 @@ type mapEntry[K comparable, V any] struct {
 	next  *mapEntry[K, V]
 	prev  *mapEntry[K, V]
 }
+
+//// Errors ////
+
+var (
+	// default errors of OMap, provided in a way that errors.Is can be used easily
+	ErrOMap                = errors.New("OMapError")
+	ErrInvalidIteratorType = fmt.Errorf("%w: invalid iterator type, tried to operate on iterator of unexpected type (cast failed)", ErrOMap)
+	ErrInvalidIteratorMap  = fmt.Errorf("%w: invalid iterator map, tried to operate on iterator of a different map instance", ErrOMap)
+	ErrInvalidIteratorPos  = fmt.Errorf("%w: iterator not positionated in a valid entry (either BOF or EOF)", ErrOMap)
+	ErrInvalidIteratorKey  = fmt.Errorf("%w: iterator seems valid but given key not found in the map anymore (concurrent access?)", ErrOMap)
+)

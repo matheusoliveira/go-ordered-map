@@ -59,9 +59,8 @@ type expectedResult[K comparable, V comparable] struct {
 	Value V
 }
 
-func validateIterator[K comparable, V comparable](t *testing.T, m omap.OMap[K, V], impl implDetail, expResults []expectedResult[K, V]) {
+func validateIterator[K comparable, V comparable](t *testing.T, it omap.OMapIterator[K, V], impl implDetail, expResults []expectedResult[K, V]) {
 	i := 0
-	it := m.Iterator()
 	for it.Next() {
 		if i >= len(expResults) {
 			t.Fatalf("overflow, expecting max of %d value, %d found so far", len(expResults), i)
@@ -92,6 +91,9 @@ func validateIterator[K comparable, V comparable](t *testing.T, m omap.OMap[K, V
 	}
 	if !it.EOF() {
 		t.Errorf("EOF returned false instead of true at end of loop")
+	}
+	if it.IsValid() {
+		t.Errorf("IsValid returned true instead of false at end of loop")
 	}
 }
 
@@ -312,7 +314,7 @@ func TestDeleteAndMarshalJSON(t *testing.T) {
 				{"c", 1},
 				{"a", 3},
 			}
-			validateIterator(t, mymap, impl, expResults)
+			validateIterator(t, mymap.Iterator(), impl, expResults)
 		})
 	}
 }
@@ -338,7 +340,7 @@ func TestOverwriteValue(t *testing.T) {
 				{"B", 20},
 				{"A", 10},
 			}
-			validateIterator(t, m, impl, expResults)
+			validateIterator(t, m.Iterator(), impl, expResults)
 		})
 	}
 }
@@ -353,7 +355,7 @@ func TestStringer(t *testing.T) {
 			m.Put("baz", 3)
 			m.Delete("x")
 			m.Put("foo", 1)
-			validateIterator(t, m, impl, []expectedResult[string, int]{{"foo", 1}, {"bar", 2}, {"baz", 3}})
+			validateIterator(t, m.Iterator(), impl, []expectedResult[string, int]{{"foo", 1}, {"bar", 2}, {"baz", 3}})
 			str := fmt.Sprint(m)
 			exp := "omap.OMap" + impl.name + "[foo:1 bar:2 baz:3]"
 			if impl.isOrdered && str != exp {
@@ -375,21 +377,21 @@ func TestDelete(t *testing.T) {
 			m.Put("c", 2)
 			m.Put("d", 3)
 			m.Put("e", 4)
-			validateIterator(t, m, impl, []expectedResult[string, int]{{"a", 0}, {"b", 1}, {"c", 2}, {"d", 3}, {"e", 4}})
+			validateIterator(t, m.Iterator(), impl, []expectedResult[string, int]{{"a", 0}, {"b", 1}, {"c", 2}, {"d", 3}, {"e", 4}})
 			// delete head
 			m.Delete("a")
-			validateIterator(t, m, impl, []expectedResult[string, int]{{"b", 1}, {"c", 2}, {"d", 3}, {"e", 4}})
+			validateIterator(t, m.Iterator(), impl, []expectedResult[string, int]{{"b", 1}, {"c", 2}, {"d", 3}, {"e", 4}})
 			// delete tail
 			m.Delete("e")
-			validateIterator(t, m, impl, []expectedResult[string, int]{{"b", 1}, {"c", 2}, {"d", 3}})
+			validateIterator(t, m.Iterator(), impl, []expectedResult[string, int]{{"b", 1}, {"c", 2}, {"d", 3}})
 			// delete in the middle
 			m.Delete("c")
-			validateIterator(t, m, impl, []expectedResult[string, int]{{"b", 1}, {"d", 3}})
+			validateIterator(t, m.Iterator(), impl, []expectedResult[string, int]{{"b", 1}, {"d", 3}})
 			// empty
 			m.Delete("b")
-			validateIterator(t, m, impl, []expectedResult[string, int]{{"d", 3}})
+			validateIterator(t, m.Iterator(), impl, []expectedResult[string, int]{{"d", 3}})
 			m.Delete("d")
-			validateIterator(t, m, impl, []expectedResult[string, int]{})
+			validateIterator[string, int](t, m.Iterator(), impl, []expectedResult[string, int]{})
 		})
 	}
 }
@@ -463,6 +465,64 @@ func TestUnmarshalJSONUtilErrNonStringKeyJSON(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error")
 	}
+}
+
+func TestItMove(t *testing.T) {
+	for _, impl := range implementations {
+		if !impl.isOrdered {
+			continue
+		}
+		t.Run(impl.name, func(t *testing.T) {
+			m := impl.initializerStrInt()
+			m.Put("a", 1)
+			m.Put("b", 2)
+			m.Put("c", 3)
+			expected := []expectedResult[string, int]{{"a", 1}, {"b", 2}, {"c", 3}}
+			it := m.Iterator()
+			it.MoveBack()
+			expPos := len(expected) - 1
+			for it.Prev() {
+				if expPos < 0 {
+					t.Fatalf("found key/val = %q/%v after last position", it.Key(), it.Value())
+				}
+				if it.Key() != expected[expPos].Key {
+					t.Errorf("expected key %q, found %q", expected[expPos].Key, it.Key())
+				}
+				if it.Value() != expected[expPos].Value {
+					t.Errorf("expected value %v, found %v", expected[expPos].Value, it.Value())
+				}
+				expPos--
+			}
+			if it.Prev() {
+				t.Error("another call to prev should be false, found true")
+			}
+			if it.IsValid() {
+				t.Error("iterator should not be valid")
+			}
+			if expPos >= 0 {
+				t.Errorf("missing keys/vals: %v", expected[:expPos+1])
+			}
+			// check if it can move forward again
+			it.MoveFront()
+			validateIterator(t, it, impl, expected)
+		})
+	}
+}
+
+func TestNotImplementedPanics(t *testing.T) {
+	validatePanic := func(t *testing.T, msg string, fct func()) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("%s, no panic called", msg)
+			}
+		}()
+		fct()
+	}
+	m := omap.NewOMapBuiltin[string, int]()
+	it := m.Iterator()
+	validatePanic(t, fmt.Sprintf("%T.MoveFront()", it), func() { it.MoveFront() })
+	validatePanic(t, fmt.Sprintf("%T.MoveBack()", it), func() { it.MoveBack() })
+	validatePanic(t, fmt.Sprintf("%T.Prev()", it), func() { it.Prev() })
 }
 
 //// Benchmarks ////

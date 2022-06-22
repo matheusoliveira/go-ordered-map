@@ -116,3 +116,19 @@ func (it *OMapBuiltinIterator[K, V]) Key() K {
 func (it *OMapBuiltinIterator[K, V]) Value() V {
 	return it.value
 }
+
+func (it OMapBuiltinIterator[K, V]) IsValid() bool {
+	return !it.eof
+}
+
+func (it *OMapBuiltinIterator[K, V]) MoveFront() OMapIterator[K, V] {
+	panic("not implemented")
+}
+
+func (it *OMapBuiltinIterator[K, V]) MoveBack() OMapIterator[K, V] {
+	panic("not implemented")
+}
+
+func (it *OMapBuiltinIterator[K, V]) Prev() bool {
+	panic("not implemented")
+}

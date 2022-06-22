@@ -2,7 +2,7 @@ package omultimap
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
@@ -37,9 +37,21 @@ func (m *OMultiMapSync[K, V]) Put(key K, values ...V) {
 	m.omm.Put(key, values...)
 }
 
+func (m *OMultiMapSync[K, V]) PutAfter(interfaceIt omap.OMapIterator[K, V], key K, value V) error {
+	if it, ok := interfaceIt.(*OMultiMapSyncIterator[K, V]); !ok {
+		return fmt.Errorf("%w - expected OMultiMapSyncIterator found %T", omap.ErrInvalidIteratorType, interfaceIt)
+	} else {
+		m.lock.Lock()
+		defer m.lock.Unlock()
+		return m.omm.PutAfter(it.it, key, value)
+	}
+}
+
 func (m *OMultiMapSync[K, V]) GetValuesOf(key K) omap.OMapIterator[K, V] {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
+	// get values of returns an slice, so it is basically an snapshot of the data at that point, so it
+	// is not necessary to keep synchronizing it like we do for the full map iterator.
 	return m.omm.GetValuesOf(key)
 }
 
@@ -51,7 +63,7 @@ func (m *OMultiMapSync[K, V]) DeleteAll(key K) {
 
 func (m *OMultiMapSync[K, V]) DeleteAt(interfaceIt omap.OMapIterator[K, V]) error {
 	if it, ok := interfaceIt.(*OMultiMapSyncIterator[K, V]); !ok {
-		return errors.New("trying to operate on invalid map iterator")
+		return fmt.Errorf("%w - expected OMultiMapSyncIterator found %T", omap.ErrInvalidIteratorType, interfaceIt)
 	} else {
 		m.lock.Lock()
 		defer m.lock.Unlock()
@@ -116,4 +128,28 @@ func (it *OMultiMapSyncIterator[K, V]) Key() K {
 
 func (it *OMultiMapSyncIterator[K, V]) Value() V {
 	return it.it.Value()
+}
+
+func (it *OMultiMapSyncIterator[K, V]) IsValid() bool {
+	return it.it.IsValid()
+}
+
+func (it *OMultiMapSyncIterator[K, V]) MoveFront() omap.OMapIterator[K, V] {
+	it.m.lock.RLock()
+	defer it.m.lock.RUnlock()
+	it.it.MoveFront()
+	return it
+}
+
+func (it *OMultiMapSyncIterator[K, V]) MoveBack() omap.OMapIterator[K, V] {
+	it.m.lock.RLock()
+	defer it.m.lock.RUnlock()
+	it.it.MoveBack()
+	return it
+}
+
+func (it *OMultiMapSyncIterator[K, V]) Prev() bool {
+	it.m.lock.RLock()
+	defer it.m.lock.RUnlock()
+	return it.it.Prev()
 }

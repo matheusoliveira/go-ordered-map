@@ -2,8 +2,8 @@
 [![Codecov](https://codecov.io/gh/matheusoliveira/go-ordered-map/branch/main/graph/badge.svg?token=H4SjidS9Yq)](https://codecov.io/gh/matheusoliveira/go-ordered-map)
 [![Go Report Card](https://goreportcard.com/badge/github.com/matheusoliveira/go-ordered-map)](https://goreportcard.com/report/github.com/matheusoliveira/go-ordered-map)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/matheusoliveira/go-ordered-map.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/matheusoliveira/go-ordered-map/alerts/)
-[![Go Reference](https://pkg.go.dev/badge/github.com/matheusoliveira/go-ordered-map@main/pkg/omap.svg)](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omap)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Go Reference](https://pkg.go.dev/badge/github.com/matheusoliveira/go-ordered-map.svg)](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 Collection of ordered map and ordered multimap implementations:
 - [omap.OMapLinked](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omap#OMapLinked)
@@ -104,6 +104,10 @@ func main() {
 	if string(output) == string(input) {
 		fmt.Println("Sucess!")
 	}
+	// reverse iterator
+	for it := m.Iterator().MoveBack(); it.Prev(); {
+		fmt.Printf("%s = %d\n", it.Key(), it.Value())
+	}
 }
 ```
 
@@ -115,6 +119,9 @@ baz = 3
 omap.OMapLinked[hi:Hello name:World!]
 {"hi":"Hello","name":"World!"}
 Sucess!
+baz = 3
+bar = 2
+foo = 1
 ```
 
 See [omap API reference](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omap) for more details.
