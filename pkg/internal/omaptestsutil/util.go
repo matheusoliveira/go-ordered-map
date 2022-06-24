@@ -1,7 +1,6 @@
 package omaptestsutil
 
 import (
-
 	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
 )
 

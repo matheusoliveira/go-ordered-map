@@ -56,7 +56,7 @@ func (m *OMapSimple[K, V]) PutAfter(interfaceIt OMapIterator[K, V], key K, value
 			return nil
 		}
 		pos := it.i + 1
-		tmp := make([]K, 0, len(m.keys) + 1)
+		tmp := make([]K, 0, len(m.keys)+1)
 		tmp = append(tmp, m.keys[0:pos]...)
 		tmp = append(tmp, key)
 		tmp = append(tmp, m.keys[pos:]...)
@@ -66,7 +66,7 @@ func (m *OMapSimple[K, V]) PutAfter(interfaceIt OMapIterator[K, V], key K, value
 					// move all values to the left
 					copy(tmp, tmp[0:i])
 					copy(tmp[i:], tmp[i+1:])
-					tmp = tmp[0:len(tmp)-1]
+					tmp = tmp[0 : len(tmp)-1]
 					break
 				}
 			}

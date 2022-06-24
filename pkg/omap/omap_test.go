@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
 	omt "github.com/matheusoliveira/go-ordered-map/pkg/internal/omaptestsutil"
+	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
 )
 
 const (

@@ -158,10 +158,10 @@ func FuzzOMapImpls(f *testing.F) {
 			op(t, maps, keys[i], vals[i])
 			opsDebug[i] = fmt.Sprintf("%s(%q,%v)", opsDebug[i], keys[i], vals[i])
 		}
-			t.Logf("final operations (total of %d): %v", len(ops), opsDebug)
-			for _, m := range maps {
-				t.Logf("  - map content: %v", m)
-			}
+		t.Logf("final operations (total of %d): %v", len(ops), opsDebug)
+		for _, m := range maps {
+			t.Logf("  - map content: %v", m)
+		}
 		// Iterate over all maps and see if they match perfectly
 		if !validateMapsEquality(t, maps) {
 			// If failed, debug final result

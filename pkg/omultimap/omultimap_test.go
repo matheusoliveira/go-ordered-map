@@ -3,9 +3,9 @@ package omultimap_test
 import (
 	"encoding/json"
 	"errors"
-	"strconv"
 	"fmt"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
@@ -64,7 +64,7 @@ func TestNewIsOMultiMapLinked(t *testing.T) {
 }
 
 func validateReverseIterator[K comparable, V comparable](t *testing.T, it omap.OMapIterator[K, V], keyExp []K, valExp []V) {
-	pos := len(keyExp)-1
+	pos := len(keyExp) - 1
 	it.MoveBack()
 	for it.Prev() {
 		if pos < 0 {
@@ -368,7 +368,7 @@ func TestPutAfter(t *testing.T) {
 			its[3].Next() // foo/2
 			its[3].Next() // foo/3
 			for i, it := range its {
-				if err := mm.PutAfter(it, "bar", "bar/" + strconv.Itoa(i)); err != nil {
+				if err := mm.PutAfter(it, "bar", "bar/"+strconv.Itoa(i)); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			}

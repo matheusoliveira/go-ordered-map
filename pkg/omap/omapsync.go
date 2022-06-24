@@ -77,7 +77,6 @@ func (m *OMapSync[K, V]) GetIteratorAt(key K) OMapIterator[K, V] {
 	return &OMapSyncIterator[K, V]{it: m.om.GetIteratorAt(key), m: m}
 }
 
-
 // Delete the value pointing to the given key.
 // Complexity: same as builtin [delete](https://pkg.go.dev/builtin#delete)
 func (m *OMapSync[K, V]) Delete(key K) {
