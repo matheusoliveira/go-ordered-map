@@ -2,6 +2,7 @@ package omap
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 )
 
@@ -50,6 +51,16 @@ func (m *OMapSync[K, V]) Put(key K, value V) {
 	m.om.Put(key, value)
 }
 
+func (m *OMapSync[K, V]) PutAfter(interfaceIt OMapIterator[K, V], key K, value V) error {
+	if it, ok := interfaceIt.(*OMapSyncIterator[K, V]); !ok {
+		return fmt.Errorf("%w - expected OMapSyncIterator found %T", ErrInvalidIteratorType, interfaceIt)
+	} else {
+		m.mx.Lock()
+		defer m.mx.Unlock()
+		return m.om.PutAfter(it.it, key, value)
+	}
+}
+
 // Get the value pointing to the given key, returning true as second argument if found, and
 // false otherwise.
 // Complexity: O(1), same as builtin map[key]
@@ -59,6 +70,13 @@ func (m *OMapSync[K, V]) Get(key K) (V, bool) {
 	v, ok := m.om.Get(key)
 	return v, ok
 }
+
+func (m *OMapSync[K, V]) GetIteratorAt(key K) OMapIterator[K, V] {
+	m.mx.RLock()
+	defer m.mx.RUnlock()
+	return &OMapSyncIterator[K, V]{it: m.om.GetIteratorAt(key), m: m}
+}
+
 
 // Delete the value pointing to the given key.
 // Complexity: same as builtin [delete](https://pkg.go.dev/builtin#delete)

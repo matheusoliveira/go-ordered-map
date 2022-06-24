@@ -138,6 +138,64 @@ func (m *OMapLinkedHash[K, V]) Put(key K, value V) {
 	}
 }
 
+func (m *OMapLinkedHash[K, V]) PutAfter(interfaceIt OMapIterator[K, V], key K, value V) error {
+	if it, ok := interfaceIt.(*OMapLinkedHashIterator[K, V]); !ok {
+		return fmt.Errorf("%w - expected OMapLinkedHash found %T", ErrInvalidIteratorType, interfaceIt)
+	} else if it.m != m {
+		return ErrInvalidIteratorMap
+	} else if !it.bof && it.cursor == nil {
+		return ErrInvalidIteratorPos
+	} else {
+		if !it.bof {
+			// validate if the iterator is still at a valid entry
+			itKey := it.Key()
+			elems, pos, _ := m.getEntry(&itKey)
+			if pos < 0 || elems[pos] != it.cursor {
+				return fmt.Errorf("%w - iterator positioned at invalid entry", ErrInvalidIteratorPos)
+			}
+			// simple case, just overwrite
+			if it.Key() == key {
+				it.cursor.value = value
+				return nil
+			}
+		}
+		m.Delete(key)
+		m.length++
+		entry := &mapEntry[*K, V]{
+			key:   &key,
+			value: value,
+		}
+		hashedKey := m.hasher(&key)
+		if elems, ok := m.m[hashedKey]; ok {
+			m.m[hashedKey] = append(elems, entry)
+		} else {
+			m.m[hashedKey] = []*mapEntry[*K, V]{entry}
+		}
+		if !it.bof {
+			entry.prev = it.cursor
+			entry.next = entry.prev.next
+			if entry.prev.next != nil {
+				entry.prev.next.prev = entry
+			}
+			entry.prev.next = entry
+		} else {
+			entry.prev = nil
+			entry.next = m.head
+		}
+		// update map head and tail
+		if m.head == nil {
+			m.head = entry
+			m.tail = entry
+		} else if it.bof {
+			m.head.prev = entry
+			m.head = entry
+		} else if m.tail == entry.prev {
+			m.tail = entry
+		}
+		return nil
+	}
+}
+
 func (m *OMapLinkedHash[K, V]) getEntry(key *K) ([]*mapEntry[*K, V], int, uint32) {
 	var elems []*mapEntry[*K, V]
 	var ok bool
@@ -160,6 +218,15 @@ func (m *OMapLinkedHash[K, V]) Get(key K) (V, bool) {
 	} else {
 		var val V
 		return val, false
+	}
+}
+
+func (m *OMapLinkedHash[K, V]) GetIteratorAt(key K) OMapIterator[K, V] {
+	elems, pos, _ := m.getEntry(&key)
+	if pos >= 0 {
+		return &OMapLinkedHashIterator[K, V]{m: m, cursor: elems[pos], bof: false}
+	} else {
+		return &OMapLinkedHashIterator[K, V]{m: m, cursor: nil, bof: false}
 	}
 }
 

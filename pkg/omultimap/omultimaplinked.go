@@ -221,6 +221,7 @@ func (m *OMultiMapLinked[K, V]) PutAfter(interfaceIt omap.OMapIterator[K, V], ke
 		m.head = entry
 		m.tail = entry
 	} else if it.bof {
+		m.head.prev = entry
 		m.head = entry
 	} else if m.tail == entry.prev {
 		m.tail = entry

@@ -35,6 +35,7 @@ func init() {
 }
 
 func mustAssertSlicesEqual[V comparable](t *testing.T, msg string, test []V, expected ...V) {
+	t.Helper()
 	if len(test) != len(expected) {
 		t.Fatalf("%s - len not match, expected %d, found %d", msg, len(expected), len(test))
 	} else {

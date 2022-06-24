@@ -12,7 +12,7 @@ import (
 type OMultiMap[K comparable, V any] interface {
 	// Add a given key/value to the map.
 	Put(key K, values ...V)
-	// Add a given key/value to the map, after the entry pointed by it
+	// Add a given key/value to the map, after the entry pointed by it.
 	PutAfter(it omap.OMapIterator[K, V], key K, value V) error
 	// Get an iterator over all values of a given key.
 	GetValuesOf(key K) omap.OMapIterator[K, V]
@@ -24,6 +24,6 @@ type OMultiMap[K comparable, V any] interface {
 	MustDeleteAt(omap.OMapIterator[K, V])
 	// Return an iterator at the beginning of the map.
 	Iterator() omap.OMapIterator[K, V]
-	// Returns the len of the map, similar to builtin len(map)
+	// Returns the len of the map, similar to builtin len(map).
 	Len() int
 }
