@@ -63,7 +63,7 @@ func (m *OMapLinkedHash[K, V]) setupHasher() {
 		var mh maphash.Hash
 		m.hasher = func(key *K) uint32 {
 			s, _ := any(*key).(string)
-			mh.WriteString(s)
+			_, _ = mh.WriteString(s)
 			ret := mh.Sum64()
 			mh.Reset()
 			return uint32(ret)
@@ -103,7 +103,7 @@ func (m *OMapLinkedHash[K, V]) setupHasher() {
 		var mh maphash.Hash
 		m.hasher = func(key *K) uint32 {
 			s := fmt.Sprint(*key)
-			mh.WriteString(s)
+			_, _ = mh.WriteString(s)
 			ret := mh.Sum64()
 			mh.Reset()
 			return uint32(ret)

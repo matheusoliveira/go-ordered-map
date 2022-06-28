@@ -2,7 +2,6 @@ package omap_test
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 	"reflect"
@@ -12,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	omt "github.com/matheusoliveira/go-ordered-map/pkg/internal/omaptestsutil"
+	th "github.com/matheusoliveira/go-ordered-map/internal/testhelper"
 	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
 )
 
@@ -56,105 +55,6 @@ func validateGet(t *testing.T, m omap.OMap[string, int], key string, expected in
 	}
 	return true
 }
-
-type expectedResult[K comparable, V comparable] struct {
-	Key   K
-	Value V
-}
-
-func validateIterator[K comparable, V comparable](t *testing.T, it omap.OMapIterator[K, V], impl implDetail, expResults []expectedResult[K, V]) bool {
-	startValid := it.IsValid() // check if started as valid iterator (not at BOF), to skip checking boundaries at backward validation
-	i := 0
-	for it.Next() {
-		if i >= len(expResults) {
-			t.Errorf("overflow, expecting max of %d value, %d found so far", len(expResults), i)
-			return false
-		}
-		key := it.Key()
-		value := it.Value()
-		exp := expResults[i]
-		if !impl.isOrdered {
-			found := false
-			for _, e := range expResults {
-				if e.Key == key {
-					found = true
-					exp = e
-					break
-				}
-			}
-			if !found {
-				t.Errorf("found unexpected key/value pair: %v/%v", key, value)
-				return false
-			}
-		}
-		if exp.Key != key {
-			t.Errorf("expecting key \"%v\" at position %d, key \"%v\" found", exp.Key, i, key)
-			return false
-		}
-		if exp.Value != value {
-			t.Errorf("invalid value for key \"%v\", at position %d, expected %v, found %v", key, i, exp.Value, value)
-			return false
-		}
-		i++
-	}
-	if i != len(expResults) {
-		t.Errorf("values not processed: %v", expResults[i-1:])
-		return false
-	}
-	if !it.EOF() {
-		t.Errorf("EOF returned false instead of true at end of loop")
-		return false
-	}
-	if it.IsValid() {
-		t.Errorf("IsValid returned true instead of false at end of loop")
-		return false
-	}
-	if impl.isOrdered {
-		// Validate it backwards now
-		i = len(expResults) - 1
-		for it.Prev() {
-			if i < 0 {
-				if startValid {
-					break
-				}
-				t.Fatalf("backward validation - overflow, expecting max of %d values", len(expResults))
-				return false
-			}
-			key := it.Key()
-			value := it.Value()
-			exp := expResults[i]
-			if exp.Key != key {
-				t.Errorf("backward validation - expecting key \"%v\" at position %d, key \"%v\" found", exp.Key, i, key)
-				return false
-			}
-			if exp.Value != value {
-				t.Errorf("backward validation - invalid value for key \"%v\", at position %d, expected %v, found %v", key, i, exp.Value, value)
-				return false
-			}
-			i--
-		}
-		if i >= 0 {
-			t.Errorf("backward validation - values not processed: %v", expResults[:i+1])
-			return false
-		}
-		if !startValid && it.IsValid() {
-			t.Errorf("backward validation - IsValid returned true instead of false at end of loop")
-			return false
-		}
-	}
-	return true
-}
-
-/*
-func reverseLog[K comparable, V comparable](m omap.OMap[K, V]) string {
-	ret := fmt.Sprintf("%T[", m)
-	for it := m.Iterator().MoveBack(); it.Prev(); {
-		ret += fmt.Sprintf(" %v:%v", it.Key(), it.Value())
-	}
-	ret += "]"
-	return ret
-}
-*/
 
 //// Tests ////
 
@@ -230,9 +130,7 @@ func TestUnmarshalJSONError(t *testing.T) {
 			}
 			for _, invalidJson := range invalidJsons {
 				invalidMap := impl.initializerStrInt()
-				if err := json.Unmarshal(invalidJson, &invalidMap); err == nil {
-					t.Errorf("expected error on json: %s", string(invalidJson))
-				}
+				th.AssertErrNotNil(t, json.Unmarshal(invalidJson, &invalidMap), "expecting an error on json.Unmarshal")
 			}
 		})
 	}
@@ -369,11 +267,7 @@ func TestDeleteAndMarshalJSON(t *testing.T) {
 				}
 			}
 			// iterate over all results, see if they are in order
-			expResults := []omt.KeyValue[string, int]{
-				{"c", 1},
-				{"a", 3},
-			}
-			omt.ValidateIterator(t, mymap.Iterator(), impl.isOrdered, expResults)
+			th.ValidateIterator(t, mymap.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["c",1],["a",3]]`))
 		})
 	}
 }
@@ -394,12 +288,7 @@ func TestOverwriteValue(t *testing.T) {
 			validateGet(t, m, "B", 20)
 			validateGet(t, m, "C", 30)
 			// iterate
-			expResults := []omt.KeyValue[string, int]{
-				{"C", 30},
-				{"B", 20},
-				{"A", 10},
-			}
-			omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, expResults)
+			th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["C",30],["B",20],["A",10]]`))
 		})
 	}
 }
@@ -414,7 +303,7 @@ func TestStringer(t *testing.T) {
 			m.Put("baz", 3)
 			m.Delete("x")
 			m.Put("foo", 1)
-			omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"foo", 1}, {"bar", 2}, {"baz", 3}})
+			th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["foo",1],["bar",2],["baz",3]]`))
 			str := fmt.Sprint(m)
 			exp := "omap.OMap" + impl.name + "[foo:1 bar:2 baz:3]"
 			if impl.isOrdered && str != exp {
@@ -436,21 +325,21 @@ func TestDelete(t *testing.T) {
 			m.Put("c", 2)
 			m.Put("d", 3)
 			m.Put("e", 4)
-			omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"a", 0}, {"b", 1}, {"c", 2}, {"d", 3}, {"e", 4}})
+			th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["a",0],["b",1],["c",2],["d",3],["e",4]]`))
 			// delete head
 			m.Delete("a")
-			omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"b", 1}, {"c", 2}, {"d", 3}, {"e", 4}})
+			th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["b",1],["c",2],["d",3],["e",4]]`))
 			// delete tail
 			m.Delete("e")
-			omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"b", 1}, {"c", 2}, {"d", 3}})
+			th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["b",1],["c",2],["d",3]]`))
 			// delete in the middle
 			m.Delete("c")
-			omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"b", 1}, {"d", 3}})
+			th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["b",1],["d",3]]`))
 			// empty
 			m.Delete("b")
-			omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"d", 3}})
+			th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["d",3]]`))
 			m.Delete("d")
-			omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{})
+			th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[]`))
 		})
 	}
 }
@@ -504,26 +393,17 @@ func TestRaceCondition(t *testing.T) {
 
 func TestUnmarshalJSONUtilErrAtFirstToken(t *testing.T) {
 	m := omap.New[string, int]()
-	err := omap.UnmarshalJSON(m.Put, []byte("not a valid json"))
-	if err == nil {
-		t.Fatal("expected an error")
-	}
+	th.AssertErrNotNil(t, omap.UnmarshalJSON(m.Put, []byte("not a valid json")), "expecting an error with invalid JSON given")
 }
 
 func TestUnmarshalJSONUtilErrAfterFirstKey(t *testing.T) {
 	m := omap.New[string, int]()
-	err := omap.UnmarshalJSON(m.Put, []byte("{\"foo\": 1, bar}"))
-	if err == nil {
-		t.Fatal("expected an error")
-	}
+	th.AssertErrNotNil(t, omap.UnmarshalJSON(m.Put, []byte("{\"foo\": 1, bar}")), "expecting an error with invalid JSON given")
 }
 
 func TestUnmarshalJSONUtilErrNonStringKeyJSON(t *testing.T) {
 	m := omap.New[int, int]()
-	err := omap.UnmarshalJSON(m.Put, []byte("{\"1\": 2}"))
-	if err == nil {
-		t.Fatal("expected an error")
-	}
+	th.AssertErrNotNil(t, omap.UnmarshalJSON(m.Put, []byte("{\"1\": 2}")), "expecting an error with invalid JSON given")
 }
 
 func TestItMove(t *testing.T) {
@@ -536,7 +416,7 @@ func TestItMove(t *testing.T) {
 			m.Put("a", 1)
 			m.Put("b", 2)
 			m.Put("c", 3)
-			expected := []omt.KeyValue[string, int]{{"a", 1}, {"b", 2}, {"c", 3}}
+			expected := []th.KeyValue[string, int]{{Key: "a", Value: 1}, {Key: "b", Value: 2}, {Key: "c", Value: 3}}
 			it := m.Iterator()
 			it.MoveBack()
 			expPos := len(expected) - 1
@@ -563,7 +443,7 @@ func TestItMove(t *testing.T) {
 			}
 			// check if it can move forward again
 			it.MoveFront()
-			omt.ValidateIterator(t, it, impl.isOrdered, expected)
+			th.ValidateIterator(t, it, impl.isOrdered, expected)
 		})
 	}
 }
@@ -598,17 +478,41 @@ func TestGetIteratorAt(t *testing.T) {
 			if itA := m.GetIteratorAt("a"); !itA.IsValid() {
 				t.Errorf("expected %T.GetIteratorAt(\"a\") to be valid, found an invalid one", m)
 			} else {
-				omt.ValidateIterator(t, itA, impl.isOrdered, []omt.KeyValue[string, int]{{"b", 2}, {"d", 4}})
+				th.ValidateIterator(t, itA, impl.isOrdered, th.JsonToKV[string, int](`[["b",2],["d",4]]`))
 			}
 			if itB := m.GetIteratorAt("b"); !itB.IsValid() {
 				t.Errorf("expected %T.GetIteratorAt(\"b\") to be valid, found an invalid one", m)
 			} else {
-				omt.ValidateIterator(t, itB, impl.isOrdered, []omt.KeyValue[string, int]{{"d", 4}})
+				th.ValidateIterator(t, itB, impl.isOrdered, th.JsonToKV[string, int](`[["d",4]]`))
 			}
 			if itD := m.GetIteratorAt("d"); !itD.IsValid() {
 				t.Errorf("expected %T.GetIteratorAt(\"d\") to be valid, found an invalid one", m)
 			} else {
-				omt.ValidateIterator(t, itD, impl.isOrdered, []omt.KeyValue[string, int]{})
+				th.ValidateIterator(t, itD, impl.isOrdered, th.JsonToKV[string, int](`[]`))
+			}
+		})
+	}
+}
+
+func TestPutAfterErrors(t *testing.T) {
+	for _, impl := range implementations {
+		if !impl.isOrdered {
+			continue
+		}
+		t.Run(impl.name, func(t *testing.T) {
+			var invalidIt omap.OMapIterator[string, int]
+			m := impl.initializerStrInt()
+			th.AssertErrIs(t, m.PutAfter(invalidIt, "x", 0), omap.ErrInvalidIteratorType, "expected PutAfter with invalid it to fail")
+			invalidMapIt := impl.initializerStrInt().Iterator()
+			th.AssertErrIs(t, m.PutAfter(invalidMapIt, "x", 0), omap.ErrInvalidIteratorMap, "expected PutAfter with different map to fail")
+			th.AssertErrIs(t, m.PutAfter(m.Iterator().MoveBack(), "x", 0), omap.ErrInvalidIteratorPos, "expected PutAfter with iterator at EOF to fail")
+			m.Put("x", 0)
+			deletedRefIt := m.GetIteratorAt("x")
+			m.Delete("x")
+			th.AssertErrIs(t, m.PutAfter(deletedRefIt, "x", 0), omap.ErrInvalidIteratorPos, "expected PutAfter with iterator at deleted key to fail")
+			if impl.name != implSimple { // OMapSimple can't validate this, as it always seek the key/value by the position
+				m.Put("x", 0)
+				th.AssertErrIs(t, m.PutAfter(deletedRefIt, "x", 0), omap.ErrInvalidIteratorPos, "expected PutAfter with iterator at old reference to fail")
 			}
 		})
 	}
@@ -621,69 +525,42 @@ func TestPutAfter(t *testing.T) {
 		}
 		t.Run(impl.name, func(t *testing.T) {
 			m := impl.initializerStrInt()
-			// Errors
-			var invalidIt omap.OMapIterator[string, int]
-			if err := m.PutAfter(invalidIt, "x", 0); !errors.Is(err, omap.ErrInvalidIteratorType) {
-				t.Error("expected PutAfter with invalid it to fail")
-			}
-			invalidMapIt := impl.initializerStrInt().Iterator()
-			if err := m.PutAfter(invalidMapIt, "x", 0); !errors.Is(err, omap.ErrInvalidIteratorMap) {
-				t.Error("expected PutAfter with different map to fail")
-			}
-			if err := m.PutAfter(m.Iterator().MoveBack(), "x", 0); !errors.Is(err, omap.ErrInvalidIteratorPos) {
-				t.Error("expected PutAfter with iterator at EOF to fail")
-			}
-			m.Put("x", 0)
-			deletedRefIt := m.GetIteratorAt("x")
-			m.Delete("x")
-			if err := m.PutAfter(deletedRefIt, "x", 0); !errors.Is(err, omap.ErrInvalidIteratorPos) {
-				t.Error("expected PutAfter with iterator at deleted key to fail")
-			}
-			if impl.name != implSimple { // OMapSimple can't validate this, as it always seek the key/value by the position
-				m.Put("x", 0)
-				if err := m.PutAfter(deletedRefIt, "x", 0); !errors.Is(err, omap.ErrInvalidIteratorPos) {
-					t.Error("expected PutAfter with iterator at old reference to fail")
-				}
-			}
-			// Reset
-			m = impl.initializerStrInt()
-			// Basically put: foo/1, bar/2, baz/3
+			// Basically put: foo/1, bar/2, baz/3. But in a complex way 😝
 			// Add bar, then baz
-			m.PutAfter(m.Iterator(), "bar", 2)
-			m.PutAfter(m.GetIteratorAt("bar"), "baz", 3)
+			th.AssertErrNil(t, m.PutAfter(m.Iterator(), "bar", 2), "")
+			th.AssertErrNil(t, m.PutAfter(m.GetIteratorAt("bar"), "baz", 3), "")
 			// Add foo before baz (which is actually BOF)
 			itBeforeBar := m.GetIteratorAt("bar")
 			itBeforeBar.Prev()
-			m.PutAfter(itBeforeBar, "foo", 1)
-			omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"foo", 1}, {"bar", 2}, {"baz", 3}})
+			th.AssertErrNil(t, m.PutAfter(itBeforeBar, "foo", 1), "")
+			// Now, validate
+			th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["foo",1],["bar",2],["baz",3]]`))
 			// PutAfter at head
-			if err := m.PutAfter(m.Iterator(), "HEAD", 0); err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
+			th.AssertErrNil(t, m.PutAfter(m.Iterator(), "HEAD", 0), "")
 			// PutAfter at tail
 			itBack := m.Iterator().MoveBack()
 			itBack.Prev()
-			m.PutAfter(itBack, "TAIL", 0)
-			omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"HEAD", 0}, {"foo", 1}, {"bar", 2}, {"baz", 3}, {"TAIL", 0}})
+			th.AssertErrNil(t, m.PutAfter(itBack, "TAIL", 0), "")
+			th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["HEAD",0],["foo",1],["bar",2],["baz",3],["TAIL",0]]`))
 			// PutAfter in the middle, after each key, adding upper case values after lower case value
 			for _, k := range []string{"foo", "bar", "baz"} {
 				kUpper := strings.ToUpper(k)
 				it := m.GetIteratorAt(k)
-				m.PutAfter(it, kUpper, 0)
+				th.AssertErrNil(t, m.PutAfter(it, kUpper, 0), "")
 			}
-			omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"HEAD", 0}, {"foo", 1}, {"FOO", 0}, {"bar", 2}, {"BAR", 0}, {"baz", 3}, {"BAZ", 0}, {"TAIL", 0}})
+			th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["HEAD",0],["foo",1],["FOO",0],["bar",2],["BAR",0],["baz",3],["BAZ",0],["TAIL",0]]`))
 			// Overwrite, change values from 0 to 42, adding upper cases values in the middle before the lower case value
 			itBack = m.Iterator().MoveBack()
 			itBack.Prev()
-			m.PutAfter(itBack, "TAIL", 42)
-			m.PutAfter(m.Iterator(), "HEAD", 42)
+			th.AssertErrNil(t, m.PutAfter(itBack, "TAIL", 42), "")
+			th.AssertErrNil(t, m.PutAfter(m.Iterator(), "HEAD", 42), "")
 			for _, k := range []string{"foo", "bar", "baz"} {
 				kUpper := strings.ToUpper(k)
 				it := m.GetIteratorAt(k)
 				it.Prev()
-				m.PutAfter(it, kUpper, 42)
+				th.AssertErrNil(t, m.PutAfter(it, kUpper, 42), "")
 			}
-			omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"HEAD", 42}, {"FOO", 42}, {"foo", 1}, {"BAR", 42}, {"bar", 2}, {"BAZ", 42}, {"baz", 3}, {"TAIL", 42}})
+			th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["HEAD",42],["FOO",42],["foo",1],["BAR",42],["bar",2],["BAZ",42],["baz",3],["TAIL", 42]]`))
 		})
 	}
 }
@@ -703,47 +580,35 @@ func TestMove(t *testing.T) {
 			if err := omap.MoveAfter(m, "a", "b"); err != nil {
 				t.Errorf("unexpected error: %v", err)
 			} else {
-				omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"b", 1}, {"a", 0}, {"c", 2}, {"d", 3}, {"e", 4}})
+				th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["b",1],["a",0],["c",2],["d",3],["e",4]]`))
 			}
 			if err := omap.MoveBefore(m, "a", "b"); err != nil {
 				t.Errorf("unexpected error: %v", err)
 			} else {
-				omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"a", 0}, {"b", 1}, {"c", 2}, {"d", 3}, {"e", 4}})
+				th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["a",0],["b",1],["c",2],["d",3],["e",4]]`))
 			}
 			if err := omap.MoveAfter(m, "a", "e"); err != nil {
 				t.Errorf("unexpected error: %v", err)
 			} else {
-				omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"b", 1}, {"c", 2}, {"d", 3}, {"e", 4}, {"a", 0}})
+				th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["b",1],["c",2],["d",3],["e",4],["a",0]]`))
 			}
 			if err := omap.MoveFirst(m, "c"); err != nil {
 				t.Errorf("unexpected error: %v", err)
 			} else {
-				omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"c", 2}, {"b", 1}, {"d", 3}, {"e", 4}, {"a", 0}})
+				th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["c",2],["b",1],["d",3],["e",4],["a",0]]`))
 			}
 			if err := omap.MoveLast(m, "d"); err != nil {
 				t.Errorf("unexpected error: %v", err)
 			} else {
-				omt.ValidateIterator(t, m.Iterator(), impl.isOrdered, []omt.KeyValue[string, int]{{"c", 2}, {"b", 1}, {"e", 4}, {"a", 0}, {"d", 3}})
+				th.ValidateIterator(t, m.Iterator(), impl.isOrdered, th.JsonToKV[string, int](`[["c",2],["b",1],["e",4],["a",0],["d",3]]`))
 			}
 			// error paths - invalid keys:
-			if err := omap.MoveFirst(m, "what"); !errors.Is(err, omap.ErrKeyNotFound) {
-				t.Errorf("expecing MoveFirst with invalid refKey to fail with ErrKeyNotFound, err = [%v]", err)
-			}
-			if err := omap.MoveLast(m, "what"); !errors.Is(err, omap.ErrKeyNotFound) {
-				t.Errorf("expecing MoveLast with invalid refKey to fail with ErrKeyNotFound, err = [%v]", err)
-			}
-			if err := omap.MoveAfter(m, "a", "what"); !errors.Is(err, omap.ErrKeyNotFound) {
-				t.Errorf("expecing MoveAfter with invalid refKey to fail with ErrKeyNotFound, err = [%v]", err)
-			}
-			if err := omap.MoveAfter(m, "what", "a"); !errors.Is(err, omap.ErrKeyNotFound) {
-				t.Errorf("expecing MoveAfter with invalid targetKey to fail with ErrKeyNotFound, err = [%v]", err)
-			}
-			if err := omap.MoveBefore(m, "a", "what"); !errors.Is(err, omap.ErrKeyNotFound) {
-				t.Errorf("expecing MoveBefore with invalid refKey to fail with ErrKeyNotFound, err = [%v]", err)
-			}
-			if err := omap.MoveBefore(m, "what", "a"); !errors.Is(err, omap.ErrKeyNotFound) {
-				t.Errorf("expecing MoveBefore with invalid targetKey to fail with ErrKeyNotFound, err = [%v]", err)
-			}
+			th.AssertErrIs(t, omap.MoveFirst(m, "what"), omap.ErrKeyNotFound, "expecing MoveFirst with invalid refKey to fail with ErrKeyNotFound")
+			th.AssertErrIs(t, omap.MoveLast(m, "what"), omap.ErrKeyNotFound, "expecing MoveLast with invalid refKey to fail with ErrKeyNotFound")
+			th.AssertErrIs(t, omap.MoveAfter(m, "a", "what"), omap.ErrKeyNotFound, "expecing MoveAfter with invalid refKey to fail with ErrKeyNotFound")
+			th.AssertErrIs(t, omap.MoveAfter(m, "what", "a"), omap.ErrKeyNotFound, "expecing MoveAfter with invalid targetKey to fail with ErrKeyNotFound")
+			th.AssertErrIs(t, omap.MoveBefore(m, "a", "what"), omap.ErrKeyNotFound, "expecing MoveBefore with invalid refKey to fail with ErrKeyNotFound")
+			th.AssertErrIs(t, omap.MoveBefore(m, "what", "a"), omap.ErrKeyNotFound, "expecing MoveBefore with invalid targetKey to fail with ErrKeyNotFound")
 		})
 	}
 }
@@ -759,7 +624,7 @@ func TestNotImplementedPanics(t *testing.T) {
 	}
 	m := omap.NewOMapBuiltin[string, int]()
 	validatePanic(t, fmt.Sprintf("%T.GetIteratorAt(...)", m), func() { m.GetIteratorAt("foo") })
-	validatePanic(t, fmt.Sprintf("%T.PutAfter(...)", m), func() { m.PutAfter(m.Iterator(), "foo", 1) })
+	validatePanic(t, fmt.Sprintf("%T.PutAfter(...)", m), func() { _ = m.PutAfter(m.Iterator(), "foo", 1) })
 	it := m.Iterator()
 	validatePanic(t, fmt.Sprintf("%T.MoveFront()", it), func() { it.MoveFront() })
 	validatePanic(t, fmt.Sprintf("%T.MoveBack()", it), func() { it.MoveBack() })
@@ -829,7 +694,7 @@ func BenchmarkMarshalJSON(b *testing.B) {
 	}
 	b.Run("map", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			json.Marshal(bm)
+			_, _ = json.Marshal(bm)
 		}
 	})
 	for _, impl := range implementations {
@@ -837,7 +702,7 @@ func BenchmarkMarshalJSON(b *testing.B) {
 		putAllValues(mymap, values)
 		b.Run(impl.name, func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				json.Marshal(mymap)
+				_, _ = json.Marshal(mymap)
 			}
 		})
 	}

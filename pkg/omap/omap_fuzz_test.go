@@ -60,7 +60,7 @@ func opDelete(t *testing.T, maps []omap.OMap[string, int], key string, val int) 
 func opPutAfterGetAt(t *testing.T, maps []omap.OMap[string, int], key string, val int) {
 	putKey := strconv.Itoa(val + 2)
 	for _, m := range maps {
-		m.PutAfter(m.GetIteratorAt(key), putKey, val)
+		_ = m.PutAfter(m.GetIteratorAt(key), putKey, val)
 	}
 }
 
@@ -157,10 +157,6 @@ func FuzzOMapImpls(f *testing.F) {
 		for i, op := range ops {
 			op(t, maps, keys[i], vals[i])
 			opsDebug[i] = fmt.Sprintf("%s(%q,%v)", opsDebug[i], keys[i], vals[i])
-		}
-		t.Logf("final operations (total of %d): %v", len(ops), opsDebug)
-		for _, m := range maps {
-			t.Logf("  - map content: %v", m)
 		}
 		// Iterate over all maps and see if they match perfectly
 		if !validateMapsEquality(t, maps) {

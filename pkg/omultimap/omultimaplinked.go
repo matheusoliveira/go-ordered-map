@@ -269,6 +269,9 @@ func (m *OMultiMapLinked[K, V]) UnmarshalJSON(b []byte) error {
 //// OMultiMap Iterator ////
 
 func (it *OMultiMapLinkedIterator[K, V]) Next() bool {
+	if it.cursor == nil {
+		return false
+	}
 	if !it.bof {
 		it.cursor = it.cursor.next
 	} else {
