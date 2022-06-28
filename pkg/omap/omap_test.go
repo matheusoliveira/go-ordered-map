@@ -33,9 +33,9 @@ type implDetail struct {
 
 var implementations []implDetail
 
+//nolint
 func init() {
 	omap.EnableOMapBuiltin = true
-	//nolint
 	implementations = []implDetail{
 		{implBuiltin, false, false, omap.NewOMapBuiltin[string, int], omap.NewOMapBuiltin[LargeObject, int]},
 		{implSimple, true, false, omap.NewOMapSimple[string, int], omap.NewOMapSimple[LargeObject, int]},
