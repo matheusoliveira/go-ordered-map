@@ -1,3 +1,4 @@
+//go:build exclude
 // +build exclude
 
 // This is not part of the final package, this is just a script to build benchmarks.md doc file
@@ -23,8 +24,7 @@ import (
 
 const importPath = "./pkg/omap/"
 
-const introductionText =
-`# Benchmarks
+const introductionText = `# Benchmarks
 
 This is the result of a series of benchmarks on each implementation to validate the assumptions
 about design decision of each. Bellow is a formatted version of the results with my own
@@ -64,17 +64,18 @@ func readComments() (map[string]string, error) {
 
 // Simple Markdown-like Table Builder
 type AlignmentType int
+
 const (
 	AlignLeft AlignmentType = iota
 	AlignRight
-	AlignCenter
+	//TODO: AlignCenter
 )
 
 type TableColumn struct {
-	Title      string
-	Align AlignmentType
-	VMerge     bool
-	maxSize    int
+	Title   string
+	Align   AlignmentType
+	VMerge  bool
+	maxSize int
 }
 
 type Table struct {
@@ -130,7 +131,7 @@ func (t *Table) Write(w io.Writer) (int, error) {
 			// dotted line after title
 			for j, col := range t.Columns {
 				if col.Align == AlignRight {
-					strAsAny[j] = strings.Repeat("-", col.maxSize - 1) + ":"
+					strAsAny[j] = strings.Repeat("-", col.maxSize-1) + ":"
 				} else {
 					strAsAny[j] = strings.Repeat("-", col.maxSize)
 				}
@@ -206,7 +207,7 @@ func processBenchmark(tbl *Table, w io.Writer, benchs []BenchLine, doc map[strin
 	fmt.Fprintf(w, "## Benchmark %s\n\n", benchs[0].Name)
 	if doc != nil {
 		name := benchs[0].Name
-		if comm, ok := doc["Benchmark" + name]; ok {
+		if comm, ok := doc["Benchmark"+name]; ok {
 			// split comment and info
 			s := strings.Split(comm, conclusionTag)
 			fmt.Fprintln(w, s[0])
@@ -226,7 +227,7 @@ func processBenchmark(tbl *Table, w io.Writer, benchs []BenchLine, doc map[strin
 			perfCmpF := float64(baseline)/float64(b.NsOp) - 1
 			perfCmp = fmt.Sprintf("%.2f %%", perfCmpF*100)
 		}
-		tbl.AddRow(/*b.Name,*/ b.SubName, fmtInt(b.NRuns), fmtInt(b.NsOp), fmtInt(b.BOp), fmtInt(b.AllocsOp), perfCmp)
+		tbl.AddRow(b.SubName, fmtInt(b.NRuns), fmtInt(b.NsOp), fmtInt(b.BOp), fmtInt(b.AllocsOp), perfCmp)
 	}
 	tbl.Write(w)
 	fmt.Fprintln(w, conclusionComment)

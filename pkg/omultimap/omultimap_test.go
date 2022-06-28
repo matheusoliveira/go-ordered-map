@@ -2,12 +2,12 @@ package omultimap_test
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
 
+	th "github.com/matheusoliveira/go-ordered-map/internal/testhelper"
 	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
 	"github.com/matheusoliveira/go-ordered-map/pkg/omultimap"
 )
@@ -34,27 +34,6 @@ func init() {
 	}
 }
 
-func mustAssertSlicesEqual[V comparable](t *testing.T, msg string, test []V, expected ...V) {
-	t.Helper()
-	if len(test) != len(expected) {
-		t.Fatalf("%s - len not match, expected %d, found %d", msg, len(expected), len(test))
-	} else {
-		for i, v := range test {
-			if v != expected[i] {
-				t.Fatalf("%s - value mismatch at position %d, expected %v, found %v", msg, i, expected[i], v)
-			}
-		}
-	}
-}
-
-func iteratorToStringSlice[K comparable, V any](it omap.OMapIterator[K, V]) []string {
-	ret := make([]string, 0)
-	for it.Next() {
-		ret = append(ret, fmt.Sprint(it.Key()), fmt.Sprint(it.Value()))
-	}
-	return ret
-}
-
 func TestNewIsOMultiMapLinked(t *testing.T) {
 	exp := reflect.TypeOf(omultimap.NewOMultiMapLinked[string, int]())
 	res := reflect.TypeOf(omultimap.New[string, int]())
@@ -63,46 +42,18 @@ func TestNewIsOMultiMapLinked(t *testing.T) {
 	}
 }
 
-func validateReverseIterator[K comparable, V comparable](t *testing.T, it omap.OMapIterator[K, V], keyExp []K, valExp []V) {
-	pos := len(keyExp) - 1
-	it.MoveBack()
-	for it.Prev() {
-		if pos < 0 {
-			t.Fatalf("found key/val = %v/%v after last position", it.Key(), it.Value())
-		}
-		if it.Key() != keyExp[pos] {
-			t.Errorf("expected key %v, found %v", keyExp[pos], it.Key())
-		}
-		if it.Value() != valExp[pos] {
-			t.Errorf("expected value %v, found %v", valExp[pos], it.Value())
-		}
-		pos--
-	}
-	if it.Prev() {
-		t.Error("another call to prev should be false, found true")
-	}
-	if it.IsValid() {
-		t.Error("iterator should not be valid")
-	}
-	if pos >= 0 {
-		t.Errorf("missing keys: %v", keyExp[:pos+1])
-	}
-	// check if it can move forward again
-	mustAssertSlicesEqual(t, "fullmap keys", omap.IteratorKeysToSlice(it.MoveFront()), keyExp...)
-	mustAssertSlicesEqual(t, "fullmap values", omap.IteratorValuesToSlice(it.MoveFront()), valExp...)
-}
-
 func TestBasicOperations(t *testing.T) {
 	keys := []string{"foo", "bar", "baz"}
 	values := []string{"1", "2", "3", "4"}
-	fooKeyExp := make([]string, len(values))
-	valExp := make([]string, len(keys)*len(values))
-	keyExp := make([]string, len(keys)*len(values))
-	for i, e := range values {
-		fooKeyExp[i] = "foo"
+	fooExp := make([]th.KeyValue[string, string], len(values))
+	expected := make([]th.KeyValue[string, string], len(keys)*len(values))
+	for i, v := range values {
+		fooExp[i] = th.KeyValue[string, string]{Key: "foo", Value: v}
 		for j, k := range keys {
-			keyExp[i*len(keys)+j] = k
-			valExp[i*len(keys)+j] = e
+			expected[i*len(keys)+j] = th.KeyValue[string, string]{
+				Key:   k,
+				Value: v,
+			}
 		}
 	}
 	for _, impl := range implementations {
@@ -112,27 +63,36 @@ func TestBasicOperations(t *testing.T) {
 			mm.Put("foo")
 			mm.Put("x")
 			// add key/val pairs
-			for i := 0; i < len(keyExp); i++ {
-				mm.Put(keyExp[i], valExp[i])
+			for _, exp := range expected {
+				mm.Put(exp.Key, exp.Value)
 			}
-			itFooKey := mm.GetValuesOf("foo")
-			itFooVal := mm.GetValuesOf("foo")
-			itFullKey := mm.Iterator()
-			itFullVal := mm.Iterator()
-			mustAssertSlicesEqual(t, "foo keys", omap.IteratorKeysToSlice(itFooKey), fooKeyExp...)
-			mustAssertSlicesEqual(t, "foo values", omap.IteratorValuesToSlice(itFooVal), values...)
-			mustAssertSlicesEqual(t, "fullmap keys", omap.IteratorKeysToSlice(itFullKey), keyExp...)
-			mustAssertSlicesEqual(t, "fullmap values", omap.IteratorValuesToSlice(itFullVal), valExp...)
-			mustAssertSlicesEqual(t, "EOF", []bool{itFooKey.EOF(), itFooVal.EOF(), itFullKey.EOF(), itFullVal.EOF()}, true, true, true, true)
-			if mm.Len() != len(keyExp) {
-				t.Errorf("expected len of %d, found %d", len(keyExp), mm.Len())
+			if mm.Len() != len(expected) {
+				t.Errorf("expected len of %d, found %d", len(expected), mm.Len())
 			}
-			// reverse iterator full
-			itRev := mm.Iterator()
-			validateReverseIterator(t, itRev, keyExp, valExp)
-			// reverse iterator values
-			itFooRev := mm.GetValuesOf("foo")
-			validateReverseIterator(t, itFooRev, fooKeyExp, values)
+			it := mm.Iterator()
+			itFoo := mm.GetValuesOf("foo")
+			itFoo.MoveFront()
+			// Validate
+			th.ValidateIterator(t, it, true, expected)
+			th.ValidateIterator(t, itFoo, true, fooExp)
+			// MoveBack
+			th.ValidateIteratorBackward(t, it.MoveBack(), true, expected)
+			th.ValidateIteratorBackward(t, itFoo.MoveBack(), true, fooExp)
+			if it.Prev() {
+				t.Error("expected it.Prev to return false")
+			}
+			if itFoo.Prev() {
+				t.Error("expected itFoo.Prev to return false")
+			}
+			// MoveFront
+			th.ValidateIteratorForward(t, it.MoveFront(), true, expected)
+			th.ValidateIteratorForward(t, itFoo.MoveFront(), true, fooExp)
+			if it.Next() {
+				t.Error("expected it.Next to return false")
+			}
+			if itFoo.Next() {
+				t.Error("expected itFoo.Next to return false")
+			}
 		})
 	}
 }
@@ -145,8 +105,12 @@ func TestMultiPut(t *testing.T) {
 			mm.Put("x", "1", "2", "3")
 			mm.Put("y", "4", "5", "6")
 			mm.Put("x", "7", "8", "9")
-			mustAssertSlicesEqual(t, "keys", omap.IteratorKeysToSlice(mm.Iterator()), "x", "x", "x", "y", "y", "y", "x", "x", "x")
-			mustAssertSlicesEqual(t, "keys", omap.IteratorValuesToSlice(mm.Iterator()), "1", "2", "3", "4", "5", "6", "7", "8", "9")
+			exp := th.JsonToKV[string, string](`[["x","1"],["x","2"],["x","3"],["y","4"],["y","5"],["y","6"],["x","7"],["x","8"],["x","9"]]`)
+			expX := th.JsonToKV[string, string](`[["x","1"],["x","2"],["x","3"],["x","7"],["x","8"],["x","9"]]`)
+			expY := th.JsonToKV[string, string](`[["y","4"],["y","5"],["y","6"]]`)
+			th.ValidateIterator(t, mm.Iterator(), true, exp)
+			th.ValidateIterator(t, mm.GetValuesOf("x"), true, expX)
+			th.ValidateIterator(t, mm.GetValuesOf("y"), true, expY)
 		})
 	}
 }
@@ -157,38 +121,40 @@ func TestDeleteAt(t *testing.T) {
 			mm := impl.initializerStrStr()
 			mm.Put("foo", "1", "2", "3")
 			mm.Put("foo", "4")
-			foos := omap.IteratorValuesToSlice(mm.GetValuesOf("foo"))
-			mustAssertSlicesEqual(t, "fullmap", foos, "1", "2", "3", "4")
+			th.ValidateIterator(t, mm.GetValuesOf("foo"), true, th.JsonToKV[string, string](`[["foo","1"],["foo","2"],["foo","3"],["foo","4"]]`))
 			delIt := mm.Iterator()
-			mustAssertSlicesEqual(t, "delIt has next?", []bool{delIt.Next(), delIt.Next()}, true, true)
-			if err := mm.DeleteAt(delIt); err != nil {
-				t.Fatalf("unexpected error on DeleteAt: %v", err)
+			if !delIt.Next() {
+				t.Fatal("expected delIt.Next() to return true, first time")
 			}
+			if !delIt.Next() {
+				t.Fatal("expected delIt.Next() to return true, second time")
+			}
+			th.AssertErrNil(t, mm.DeleteAt(delIt), "unexpected error on DeleteAt")
 			// still points to deleted key/val
-			mustAssertSlicesEqual(t, "delIt still at same key/val", []string{delIt.Key(), delIt.Value()}, "foo", "2")
+			if delIt.Key() != "foo" || delIt.Value() != "2" {
+				t.Errorf("expected key/val = \"foo\"/\"2\", found %q/%q", delIt.Key(), delIt.Value())
+			}
 			// check if deleted on the map
-			mustAssertSlicesEqual(t, "still has other values", omap.IteratorValuesToSlice(mm.GetValuesOf("foo")), "1", "3", "4")
+			th.ValidateIterator(t, mm.GetValuesOf("foo"), true, th.JsonToKV[string, string](`[["foo","1"],["foo","3"],["foo","4"]]`))
 			// validate rest of iterator
-			mustAssertSlicesEqual(t, "check rest of iterator", iteratorToStringSlice(delIt), "foo", "3", "foo", "4")
+			th.ValidateIterator(t, delIt, true, th.JsonToKV[string, string](`[["foo","3"],["foo","4"]]`))
 			// delete first key
 			if delFirst := mm.Iterator(); !delFirst.Next() {
-				t.Error("delFirst should have Next")
+				t.Error("expected delFirst.Next() to return true")
 			} else if err := mm.DeleteAt(delFirst); err != nil {
 				t.Errorf("unexpected error: %v", err)
 			} else {
-				mustAssertSlicesEqual(t, "still has other keys", omap.IteratorKeysToSlice(mm.Iterator()), "foo", "foo")
-				mustAssertSlicesEqual(t, "still has other values", omap.IteratorValuesToSlice(mm.Iterator()), "3", "4")
+				th.ValidateIterator(t, mm.Iterator(), true, th.JsonToKV[string, string](`[["foo","3"],["foo","4"]]`))
 			}
 			// delete last key
 			if delLast := mm.Iterator(); !delLast.Next() {
-				t.Error("delLast should have Next")
+				t.Error("expected delLast.Next() to return true, first time")
 			} else if !delLast.Next() {
-				t.Error("delLast should have Next, twice")
+				t.Error("expected delLast.Next() to return true, second time")
 			} else if err := mm.DeleteAt(delLast); err != nil {
 				t.Errorf("unexpected error: %v", err)
 			} else {
-				mustAssertSlicesEqual(t, "still has other keys", omap.IteratorKeysToSlice(mm.Iterator()), "foo")
-				mustAssertSlicesEqual(t, "still has other values", omap.IteratorValuesToSlice(mm.Iterator()), "3")
+				th.ValidateIteratorForward(t, mm.Iterator(), true, th.JsonToKV[string, string](`[["foo","3"]]`))
 			}
 		})
 	}
@@ -202,12 +168,8 @@ func TestDeleteAtErrors(t *testing.T) {
 			mm2 := impl.initializerStrStr()
 			mm2.Put("foo", "bar")
 			it2 := mm2.Iterator()
-			if err := mm.DeleteAt(it2); !errors.Is(err, omap.ErrInvalidIteratorMap) {
-				t.Error("expected DeleteAt of different map to fail")
-			}
-			if err := mm.DeleteAt(mm.Iterator()); !errors.Is(err, omap.ErrInvalidIteratorPos) {
-				t.Error("expected DeleteAt of not started iterator to fail")
-			}
+			th.AssertErrIs(t, mm.DeleteAt(it2), omap.ErrInvalidIteratorMap, "expected DeleteAt of different map to fail with ErrInvalidIteratorMap")
+			th.AssertErrIs(t, mm.DeleteAt(mm.Iterator()), omap.ErrInvalidIteratorPos, "expected DeleteAt of not started iterator to fail with ErrInvalidIteratorPos")
 			// try delete an iterator at EOF
 			itEof := mm.Iterator()
 			for itEof.Next() {
@@ -215,9 +177,7 @@ func TestDeleteAtErrors(t *testing.T) {
 			if !itEof.EOF() {
 				t.Error("expected EOF")
 			}
-			if err := mm.DeleteAt(itEof); !errors.Is(err, omap.ErrInvalidIteratorPos) {
-				t.Error("expected DeleteAt of EOF iterator to fail")
-			}
+			th.AssertErrIs(t, mm.DeleteAt(itEof), omap.ErrInvalidIteratorPos, "expected DeleteAt of EOF iterator to fail with ErrInvalidIteratorPos")
 			// try delete after calling DeleteAll on same key
 			mmNotFoundAll := impl.initializerStrStr()
 			mmNotFoundAll.Put("foo", "bar")
@@ -226,9 +186,7 @@ func TestDeleteAtErrors(t *testing.T) {
 			} else {
 				mmNotFoundAll.Put("foo", "baz")
 				mmNotFoundAll.DeleteAll("foo")
-				if err := mmNotFoundAll.DeleteAt(itNotFoundAll); !errors.Is(err, omap.ErrInvalidIteratorKey) {
-					t.Error("expected delete at after deleting the key to fail")
-				}
+				th.AssertErrIs(t, mmNotFoundAll.DeleteAt(itNotFoundAll), omap.ErrInvalidIteratorKey, "expected delete at after deleting the key to fail with ErrInvalidIteratorKey")
 			}
 			// delete from iterator and try to delete again, should fail
 			mmNotFoundOne := impl.initializerStrStr()
@@ -237,8 +195,8 @@ func TestDeleteAtErrors(t *testing.T) {
 				t.Error("expected next to return true")
 			} else if err := mmNotFoundOne.DeleteAt(itNotFoundOne); err != nil {
 				t.Errorf("expected first attempt to mmNotFoundOne.DeleteAt to not fail, error: %v", err)
-			} else if err := mmNotFoundOne.DeleteAt(itNotFoundOne); !errors.Is(err, omap.ErrInvalidIteratorKey) {
-				t.Error("expected second attempt to mmNotFoundOne.DeleteAt to fail")
+			} else {
+				th.AssertErrIs(t, mmNotFoundOne.DeleteAt(itNotFoundOne), omap.ErrInvalidIteratorKey, "expected second attempt to mmNotFoundOne.DeleteAt to fail ErrInvalidIteratorKey")
 			}
 			// delete all of a given key and try deleting it again from a previous iterator
 			mmDeleteAllIt := impl.initializerStrStr()
@@ -259,9 +217,7 @@ func TestDeleteAtErrors(t *testing.T) {
 				if elems := omap.IteratorValuesToSlice(mmDeleteAllIt.GetValuesOf("to-delete")); len(elems) != 0 {
 					t.Errorf("should not found any value with \"to-delete\" key, found %d values", len(elems))
 				}
-				if err := mmDeleteAllIt.DeleteAt(itTry); !errors.Is(err, omap.ErrInvalidIteratorKey) {
-					t.Error("expected to mmDeleteAllIt.DeleteAt at same reference again to fail")
-				}
+				th.AssertErrIs(t, mmDeleteAllIt.DeleteAt(itTry), omap.ErrInvalidIteratorKey, "expected to mmDeleteAllIt.DeleteAt at same reference again to fail with ErrInvalidIteratorKey")
 			}
 			// test if MustDeleteAt panics
 			func() {
@@ -279,9 +235,7 @@ func TestDeleteAtErrors(t *testing.T) {
 			om := omap.New[string, string]()
 			invalidIt := om.Iterator()
 			mmInvalidIt := impl.initializerStrStr()
-			if err := mmInvalidIt.DeleteAt(invalidIt); !errors.Is(err, omap.ErrInvalidIteratorType) {
-				t.Error("expected mmInvalidIt.DeleteAt to fail")
-			}
+			th.AssertErrIs(t, mmInvalidIt.DeleteAt(invalidIt), omap.ErrInvalidIteratorType, "expected mmInvalidIt.DeleteAt to fail with ErrInvalidIteratorType")
 		})
 	}
 }
@@ -311,8 +265,7 @@ func TestJSON(t *testing.T) {
 			} else if string(js) != expectedJson {
 				t.Errorf("unexpected json output: %v", string(js))
 			}
-			mustAssertSlicesEqual(t, "keys", omap.IteratorKeysToSlice(mm2.Iterator()), "foo", "bar", "foo", "bar", "foo")
-			mustAssertSlicesEqual(t, "values", omap.IteratorValuesToSlice(mm2.Iterator()), "1", "2", "3", "4", "5")
+			th.ValidateIterator(t, mm2.Iterator(), true, th.JsonToKV[string, string](`[["foo","1"],["bar","2"],["foo","3"],["bar","4"],["foo","5"]]`))
 			// Test Stringfier
 			exp := "omultimap.OMultiMap" + impl.name + expectedStr
 			if fmt.Sprint(mm2) != exp {
@@ -329,32 +282,27 @@ func TestPutAfter(t *testing.T) {
 			// invalid iterator
 			om := omap.New[string, string]()
 			invalidIt := om.Iterator()
-			if err := mm.PutAfter(invalidIt, "x", "y"); !errors.Is(err, omap.ErrInvalidIteratorType) {
-				t.Error("expected mmInvalidIt.PutAfter to fail")
-			}
+			th.AssertErrIs(t, mm.PutAfter(invalidIt, "x", "y"), omap.ErrInvalidIteratorType, "expected mmInvalidIt.PutAfter to fail with ErrInvalidIteratorType")
 			// add at begin
 			if err := mm.PutAfter(mm.Iterator(), "foo", "1"); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			mustAssertSlicesEqual(t, "keys", omap.IteratorKeysToSlice(mm.Iterator()), "foo")
-			mustAssertSlicesEqual(t, "values", omap.IteratorValuesToSlice(mm.Iterator()), "1")
+			th.ValidateIterator(t, mm.Iterator(), true, th.JsonToKV[string, string](`[["foo","1"]]`))
 			// add at end
 			itEnd := mm.Iterator().MoveBack()
 			itEnd.Prev()
 			if err := mm.PutAfter(itEnd, "foo", "3"); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			mustAssertSlicesEqual(t, "keys", omap.IteratorKeysToSlice(mm.Iterator()), "foo", "foo")
-			mustAssertSlicesEqual(t, "values", omap.IteratorValuesToSlice(mm.Iterator()), "1", "3")
+			th.ValidateIterator(t, mm.Iterator(), true, th.JsonToKV[string, string](`[["foo","1"],["foo","3"]]`))
 			// add at the middle
 			itMiddle := mm.Iterator()
 			itMiddle.Next()
 			if err := mm.PutAfter(itMiddle, "foo", "2"); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			mustAssertSlicesEqual(t, "keys", omap.IteratorKeysToSlice(mm.Iterator()), "foo", "foo", "foo")
-			mustAssertSlicesEqual(t, "values", omap.IteratorValuesToSlice(mm.Iterator()), "1", "2", "3")
-			mustAssertSlicesEqual(t, "foo values", omap.IteratorValuesToSlice(mm.GetValuesOf("foo")), "1", "2", "3")
+			th.ValidateIterator(t, mm.Iterator(), true, th.JsonToKV[string, string](`[["foo","1"],["foo","2"],["foo","3"]]`))
+			th.ValidateIterator(t, mm.GetValuesOf("foo"), true, th.JsonToKV[string, string](`[["foo","1"],["foo","2"],["foo","3"]]`))
 			// add different keys
 			its := []omap.OMapIterator[string, string]{mm.Iterator(), mm.Iterator(), mm.Iterator(), mm.Iterator()}
 			// its[0] stays at front, nothing to do
@@ -372,10 +320,9 @@ func TestPutAfter(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			}
-			mustAssertSlicesEqual(t, "keys diff", omap.IteratorKeysToSlice(mm.Iterator()), "bar", "foo", "bar", "foo", "bar", "foo", "bar")
-			mustAssertSlicesEqual(t, "values diff", omap.IteratorValuesToSlice(mm.Iterator()), "bar/0", "1", "bar/1", "2", "bar/2", "3", "bar/3")
-			mustAssertSlicesEqual(t, "foo values", omap.IteratorValuesToSlice(mm.GetValuesOf("foo")), "1", "2", "3")
-			mustAssertSlicesEqual(t, "bar values", omap.IteratorValuesToSlice(mm.GetValuesOf("bar")), "bar/0", "bar/1", "bar/2", "bar/3")
+			th.ValidateIterator(t, mm.Iterator(), true, th.JsonToKV[string, string](`[["bar","bar/0"],["foo","1"],["bar","bar/1"],["foo","2"],["bar","bar/2"],["foo","3"],["bar","bar/3"]]`))
+			th.ValidateIterator(t, mm.GetValuesOf("foo"), true, th.JsonToKV[string, string](`[["foo","1"],["foo","2"],["foo","3"]]`))
+			th.ValidateIterator(t, mm.GetValuesOf("bar"), true, th.JsonToKV[string, string](`[["bar","bar/0"],["bar","bar/1"],["bar","bar/2"],["bar","bar/3"]]`))
 		})
 	}
 }
