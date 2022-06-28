@@ -49,9 +49,17 @@ func (m *OMapBuiltin[K, V]) Put(key K, value V) {
 	m.m[key] = value
 }
 
+func (m *OMapBuiltin[K, V]) PutAfter(interfaceIt OMapIterator[K, V], key K, value V) error {
+	panic("not implemented")
+}
+
 func (m *OMapBuiltin[K, V]) Get(key K) (V, bool) {
 	v, ok := m.m[key]
 	return v, ok
+}
+
+func (m *OMapBuiltin[K, V]) GetIteratorAt(key K) OMapIterator[K, V] {
+	panic("not implemented")
 }
 
 func (m *OMapBuiltin[K, V]) Delete(key K) {

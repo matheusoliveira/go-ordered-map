@@ -45,13 +45,18 @@ type OMap[K comparable, V any] interface {
 	// in the end of the map on iteration, if it is an update the position of the value must be
 	// maintained.
 	Put(key K, value V)
+	// Add a given key/value to the map, after the entry pointed by it.
+	PutAfter(it OMapIterator[K, V], key K, value V) error
 	// Get the value pointing by key, if found ok is true, or false otherwise.
 	Get(key K) (value V, ok bool)
-	// Delete the value pointing by key.
+	// Get the iterator positioned at the given key.
+	// If key was not found, the iterator will return at EOF and with IsValid() returning false.
+	GetIteratorAt(key K) OMapIterator[K, V]
+	// Delete the entry pointing by key.
 	Delete(key K)
 	// Returns the iterator of this map, at the beginning.
 	Iterator() OMapIterator[K, V]
-	// Returns the len of the map, similar to builtin len(map)
+	// Returns the len of the map, similar to builtin len(map).
 	Len() int
 }
 
@@ -73,4 +78,5 @@ var (
 	ErrInvalidIteratorMap  = fmt.Errorf("%w: invalid iterator map, tried to operate on iterator of a different map instance", ErrOMap)
 	ErrInvalidIteratorPos  = fmt.Errorf("%w: iterator not positionated in a valid entry (either BOF or EOF)", ErrOMap)
 	ErrInvalidIteratorKey  = fmt.Errorf("%w: iterator seems valid but given key not found in the map anymore (concurrent access?)", ErrOMap)
+	ErrKeyNotFound         = fmt.Errorf("%w: key not found", ErrOMap)
 )

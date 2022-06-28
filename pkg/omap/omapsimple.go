@@ -1,5 +1,9 @@
 package omap
 
+import (
+	"fmt"
+)
+
 //// OMapSimple ////
 
 // Implements a OMap interface using a very simple algorithm: it basically keeps a
@@ -38,6 +42,41 @@ func (m *OMapSimple[K, V]) Put(key K, value V) {
 	m.m[key] = value
 }
 
+func (m *OMapSimple[K, V]) PutAfter(interfaceIt OMapIterator[K, V], key K, value V) error {
+	if it, ok := interfaceIt.(*OMapSimpleIterator[K, V]); !ok {
+		return fmt.Errorf("%w - expected OMapSimple found %T", ErrInvalidIteratorType, interfaceIt)
+	} else if it.m != m {
+		return ErrInvalidIteratorMap
+	} else if !it.IsValid() && it.i != -1 {
+		return ErrInvalidIteratorPos
+	} else {
+		if it.i >= 0 && it.Key() == key {
+			// simple case, just overwrite
+			m.Put(key, value)
+			return nil
+		}
+		pos := it.i + 1
+		tmp := make([]K, 0, len(m.keys)+1)
+		tmp = append(tmp, m.keys[0:pos]...)
+		tmp = append(tmp, key)
+		tmp = append(tmp, m.keys[pos:]...)
+		if _, ok := m.m[key]; ok {
+			for i, k := range tmp {
+				if k == key && i != pos {
+					// move all values to the left
+					copy(tmp, tmp[0:i])
+					copy(tmp[i:], tmp[i+1:])
+					tmp = tmp[0 : len(tmp)-1]
+					break
+				}
+			}
+		}
+		m.keys = tmp
+		m.m[key] = value
+		return nil
+	}
+}
+
 // Get the value pointing to the given key, returning true as second argument if found, and
 // false otherwise.
 // Complexity: O(1), same as builtin map[key]
@@ -46,9 +85,23 @@ func (m *OMapSimple[K, V]) Get(key K) (V, bool) {
 	return v, ok
 }
 
+func (m *OMapSimple[K, V]) GetIteratorAt(key K) OMapIterator[K, V] {
+	if _, ok := m.m[key]; ok {
+		for i, k := range m.keys {
+			if k == key {
+				return &OMapSimpleIterator[K, V]{i: i, m: m}
+			}
+		}
+	}
+	return &OMapSimpleIterator[K, V]{i: len(m.keys), m: m}
+}
+
 // Delete the value pointing to the given key.
 // Complexity: O(n)
 func (m *OMapSimple[K, V]) Delete(key K) {
+	if _, ok := m.m[key]; !ok {
+		return
+	}
 	//delete(m.m, key)
 	//*
 	pos := -1

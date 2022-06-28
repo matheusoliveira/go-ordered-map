@@ -127,3 +127,56 @@ func IteratorValuesToSlice[K comparable, V any](it OMapIterator[K, V]) []V {
 	}
 	return ret
 }
+
+// Move targetKey in the m map at first position of the map. Returns omap.ErrKeyNotFound if the key
+// cannot be found in the map, or nil otherwise.
+func MoveFirst[K comparable, V any](m OMap[K, V], targetKey K) error {
+	itTarget := m.GetIteratorAt(targetKey)
+	if !itTarget.IsValid() {
+		return fmt.Errorf("%w: targetKey = \"%v\"", ErrKeyNotFound, targetKey)
+	}
+	return m.PutAfter(m.Iterator(), itTarget.Key(), itTarget.Value())
+}
+
+// Move targetKey in the m map at last position of the map. Returns omap.ErrKeyNotFound if the key
+// cannot be found in the map, or nil otherwise.
+func MoveLast[K comparable, V any](m OMap[K, V], targetKey K) error {
+	itTarget := m.GetIteratorAt(targetKey)
+	if !itTarget.IsValid() {
+		return fmt.Errorf("%w: targetKey = \"%v\"", ErrKeyNotFound, targetKey)
+	}
+	itLast := m.Iterator().MoveBack()
+	itLast.Prev()
+	return m.PutAfter(itLast, itTarget.Key(), itTarget.Value())
+}
+
+// Finds targetKey and refKey in the m map, and move the targetKey entry to the position
+// immediately after the refKey. Returns omap.ErrKeyNotFound if any of the keys cannot be found in
+// the map, or nil otherwise.
+func MoveAfter[K comparable, V any](m OMap[K, V], targetKey K, refKey K) error {
+	itTarget := m.GetIteratorAt(targetKey)
+	if !itTarget.IsValid() {
+		return fmt.Errorf("%w: targetKey = \"%v\"", ErrKeyNotFound, targetKey)
+	}
+	itRef := m.GetIteratorAt(refKey)
+	if !itRef.IsValid() {
+		return fmt.Errorf("%w: refKey = \"%v\"", ErrKeyNotFound, refKey)
+	}
+	return m.PutAfter(itRef, itTarget.Key(), itTarget.Value())
+}
+
+// Finds targetKey and refKey in the m map, and move the targetKey entry to the position
+// immediately before the refKey. Returns omap.ErrKeyNotFound if any of the keys cannot be found
+// in the map, or nil otherwise.
+func MoveBefore[K comparable, V any](m OMap[K, V], targetKey K, refKey K) error {
+	itTarget := m.GetIteratorAt(targetKey)
+	if !itTarget.IsValid() {
+		return fmt.Errorf("%w: targetKey = \"%v\"", ErrKeyNotFound, targetKey)
+	}
+	itRef := m.GetIteratorAt(refKey)
+	if !itRef.IsValid() {
+		return fmt.Errorf("%w: refKey = \"%v\"", ErrKeyNotFound, refKey)
+	}
+	itRef.Prev()
+	return m.PutAfter(itRef, itTarget.Key(), itTarget.Value())
+}

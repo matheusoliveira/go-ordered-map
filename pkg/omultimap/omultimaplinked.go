@@ -206,7 +206,7 @@ func (m *OMultiMapLinked[K, V]) PutAfter(interfaceIt omap.OMapIterator[K, V], ke
 		entry.next = m.head
 	}
 	if it.IsValid() && it.Key() == key {
-		tmp := make([]*mapEntry[K, V], 0, len(elems) + 1)
+		tmp := make([]*mapEntry[K, V], 0, len(elems)+1)
 		tmp = append(tmp, elems[0:pos+1]...)
 		tmp = append(tmp, entry)
 		tmp = append(tmp, elems[pos+1:]...)
@@ -221,6 +221,7 @@ func (m *OMultiMapLinked[K, V]) PutAfter(interfaceIt omap.OMapIterator[K, V], ke
 		m.head = entry
 		m.tail = entry
 	} else if it.bof {
+		m.head.prev = entry
 		m.head = entry
 	} else if m.tail == entry.prev {
 		m.tail = entry
