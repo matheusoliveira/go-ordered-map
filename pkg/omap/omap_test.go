@@ -34,6 +34,9 @@ type implDetail struct {
 var implementations []implDetail
 
 func init() {
+	// TODO: we wrap New* calls into anonym function due to a golangci-lint bug, we can simple use
+	//       the function after golangci-lint solves the bug, see PR #8 for more details.
+	//       Issue: https://github.com/golangci/golangci-lint/issues/2859
 	omap.EnableOMapBuiltin = true
 	implementations = []implDetail{
 		{
