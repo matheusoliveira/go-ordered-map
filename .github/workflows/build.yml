@@ -34,3 +34,8 @@ jobs:
 
     - name: Goproxy
       run: curl 'https://proxy.golang.org/github.com/matheusoliveira/go-ordered-map/@latest'
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+          version: latest

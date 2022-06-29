@@ -36,5 +36,5 @@ doc-bench:
 
 pre-release: vet test doc
 	@echo
-	@echo "Good to go!!!"
+	@echo "Good to Go!!!"
 	@echo
