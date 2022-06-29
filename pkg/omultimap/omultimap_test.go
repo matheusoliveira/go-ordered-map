@@ -29,8 +29,18 @@ var implementations []implDetail
 func init() {
 	omap.EnableOMapBuiltin = true
 	implementations = []implDetail{
-		{implLinked, true, false, omultimap.NewOMultiMapLinked[string, string]},
-		{implSync, true, true, omultimap.NewOMultiMapSync[string, string]},
+		{
+			implLinked,
+			true,
+			false,
+			func() omultimap.OMultiMap[string, string] { return omultimap.NewOMultiMapLinked[string, string]() },
+		},
+		{
+			implSync,
+			true,
+			true,
+			func() omultimap.OMultiMap[string, string] { return omultimap.NewOMultiMapSync[string, string]() },
+		},
 	}
 }
 

@@ -33,15 +33,44 @@ type implDetail struct {
 
 var implementations []implDetail
 
-//nolint
 func init() {
 	omap.EnableOMapBuiltin = true
 	implementations = []implDetail{
-		{implBuiltin, false, false, omap.NewOMapBuiltin[string, int], omap.NewOMapBuiltin[LargeObject, int]},
-		{implSimple, true, false, omap.NewOMapSimple[string, int], omap.NewOMapSimple[LargeObject, int]},
-		{implLinked, true, false, omap.NewOMapLinked[string, int], omap.NewOMapLinked[LargeObject, int]},
-		{implLinkedHash, true, false, omap.NewOMapLinkedHash[string, int], omap.NewOMapLinkedHash[LargeObject, int]},
-		{implSync, true, true, omap.NewOMapSync[string, int], omap.NewOMapSync[LargeObject, int]},
+		{
+			implBuiltin,
+			false,
+			false,
+			func() omap.OMap[string, int] { return omap.NewOMapBuiltin[string, int]() },
+			func() omap.OMap[LargeObject, int] { return omap.NewOMapBuiltin[LargeObject, int]() },
+		},
+		{
+			implSimple,
+			true,
+			false,
+			func() omap.OMap[string, int] { return omap.NewOMapSimple[string, int]() },
+			func() omap.OMap[LargeObject, int] { return omap.NewOMapSimple[LargeObject, int]() },
+		},
+		{
+			implLinked,
+			true,
+			false,
+			func() omap.OMap[string, int] { return omap.NewOMapLinked[string, int]() },
+			func() omap.OMap[LargeObject, int] { return omap.NewOMapLinked[LargeObject, int]() },
+		},
+		{
+			implLinkedHash,
+			true,
+			false,
+			func() omap.OMap[string, int] { return omap.NewOMapLinkedHash[string, int]() },
+			func() omap.OMap[LargeObject, int] { return omap.NewOMapLinkedHash[LargeObject, int]() },
+		},
+		{
+			implSync,
+			true,
+			true,
+			func() omap.OMap[string, int] { return omap.NewOMapSync[string, int]() },
+			func() omap.OMap[LargeObject, int] { return omap.NewOMapSync[LargeObject, int]() },
+		},
 	}
 }
 
