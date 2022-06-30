@@ -12,7 +12,7 @@ import (
 	"time"
 
 	th "github.com/matheusoliveira/go-ordered-map/internal/testhelper"
-	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
+	"github.com/matheusoliveira/go-ordered-map/omap"
 )
 
 const (
@@ -839,8 +839,8 @@ func BenchmarkLargeStrKeysPutGen(b *testing.B) {
 // benchmark only to get the values of a random key. All sub-benchmarks use same random
 // seed.
 // Conclusion: except for LinkedHash, the implementations basically map the Get operation to a
-// builtin map, so it is expected that the difference is minor. LinkedHash is more complex, so
-// it is expected to be slower. All good here.
+// builtin map, so it is expected that the difference is minor, and due to random factors.
+// LinkedHash is more complex, so it is expected to be slower. All good here.
 func BenchmarkLargeStrKeysGet(b *testing.B) {
 	seed := time.Now().UnixNano()
 	values := make([]string, nValues)

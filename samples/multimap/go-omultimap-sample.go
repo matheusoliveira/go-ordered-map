@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/matheusoliveira/go-ordered-map/pkg/omultimap"
-	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
+	"github.com/matheusoliveira/go-ordered-map/omultimap"
+	"github.com/matheusoliveira/go-ordered-map/omap"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	th "github.com/matheusoliveira/go-ordered-map/internal/testhelper"
-	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
+	"github.com/matheusoliveira/go-ordered-map/omap"
 )
 
 //// OMapIterator Mocks ////

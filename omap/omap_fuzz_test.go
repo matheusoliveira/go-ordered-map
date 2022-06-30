@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
+	"github.com/matheusoliveira/go-ordered-map/omap"
 )
 
 type operation func(t *testing.T, maps []omap.OMap[string, int], key string, val int)

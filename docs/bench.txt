@@ -1,7 +1,7 @@
 ?   	github.com/matheusoliveira/go-ordered-map	[no test files]
 goos: linux
 goarch: amd64
-pkg: github.com/matheusoliveira/go-ordered-map/pkg/omap
+pkg: github.com/matheusoliveira/go-ordered-map/omap
 cpu: Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz
 BenchmarkIteration/map-8         	    3936	   1399521 ns/op	       0 B/op	       0 allocs/op
 BenchmarkIteration/Builtin-8     	     303	  19250757 ns/op	     201 B/op	       4 allocs/op
@@ -57,5 +57,5 @@ BenchmarkLargeObjectKey/Linked-8          	      16	 340107150 ns/op	819876043 B
 BenchmarkLargeObjectKey/LinkedHash-8      	      28	 198635101 ns/op	820759129 B/op	   40308 allocs/op
 BenchmarkLargeObjectKey/Sync-8            	      14	 381237194 ns/op	819876630 B/op	   20221 allocs/op
 PASS
-ok  	github.com/matheusoliveira/go-ordered-map/pkg/omap	417.935s
+ok  	github.com/matheusoliveira/go-ordered-map/omap	417.935s
 ?   	github.com/matheusoliveira/go-ordered-map/sample	[no test files]
