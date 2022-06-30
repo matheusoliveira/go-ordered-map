@@ -5,7 +5,7 @@ import (
 	"sync"
 	"runtime"
 
-	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
+	"github.com/matheusoliveira/go-ordered-map/omap"
 )
 
 const nValues = 1000

@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	th "github.com/matheusoliveira/go-ordered-map/internal/testhelper"
-	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
-	"github.com/matheusoliveira/go-ordered-map/pkg/omultimap"
+	"github.com/matheusoliveira/go-ordered-map/omap"
+	"github.com/matheusoliveira/go-ordered-map/omultimap"
 )
 
 const (

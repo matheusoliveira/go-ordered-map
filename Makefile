@@ -27,7 +27,7 @@ bench:
 	go test -bench=. -benchtime=5s -benchmem ./... | tee docs/bench.txt
 
 fuzz:
-	go test -fuzz=FuzzOMapImpls ./pkg/omap/
+	go test -fuzz=FuzzOMapImpls ./omap/
 
 doc: doc-bench
 

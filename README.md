@@ -6,23 +6,23 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 Collection of ordered map and ordered multimap implementations:
-- [omap.OMapLinked](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omap#OMapLinked)
+- [omap.OMapLinked](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map/omap#OMapLinked)
   implements an ordered map using a double-linked list to keep the ordering. It is the default and
   recommended implementation of `OMap`.
-- [omap.OMapSync](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omap#OMapSync)
+- [omap.OMapSync](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map/omap#OMapSync)
   implements an ordered map using OMapLinked underneath and providing synchronization to be
   parallel-safe.  Use this only if you need to operate on the map in multiple goroutines at same
   time (writing once and reading many concurrently is safe, only writing in parallel with other
   reads/writes is an issue).
-- [omultimap.OMultiMapLinked](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omultimap#OMultiMapLinked)
+- [omultimap.OMultiMapLinked](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map/omultimap#OMultiMapLinked)
   implements an ordered multimap that can hold many values per key, and still keep then in order
   using a linked list internally
-- [omultimap.OMultiMapSync](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omultimap#OMultiMapSync)
+- [omultimap.OMultiMapSync](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map/omultimap#OMultiMapSync)
   implements an ordered multimap using OMultiMapLinked underneath and providing synchronization to be
   parallel-safe
 
 Implementation not recommended, in general (use only if you prove it better):
-- [omap.OMapLinkedHash](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omap#OMapLinkedHash)
+- [omap.OMapLinkedHash](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map/omap#OMapLinkedHash)
   implements an ordered map similar to OMapLinked, but hashes the value before saving, it is
   adivised to use only in very few occasions, see [benchmarks](docs/benchmarks.md) for details.
   This implementation is an attempt to have a map without the memory overhead to copy keys twice
@@ -34,18 +34,18 @@ Implementation not recommended, in general (use only if you prove it better):
   copying it around is not an issue for `OMapLinked`.
 
 Implementations used only for testing (do not use this in production code):
-- [omap.OMapSimple](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omap#OMapSimple)
+- [omap.OMapSimple](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map/omap#OMapSimple)
   provides a very simple implementation of `OMap` using an slice to keep the
   order of the keys. It has proven not a very efficient implementation on benchmarks, but as it has
   been kept around as it is a very simple implementation and helps on fuzz and unit testing.
-- [omap.OMapBuiltin](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omap#OMapBuiltin)
+- [omap.OMapBuiltin](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map/omap#OMapBuiltin)
   DO NOT USE THIS! It is used internally only to test/compare with builtin map using
   the `OMap` interface, but iterating over this map is a bit expensive (use of goroutine and
   channels, which can leak) and it is not ordered.
 
 Requirements:
 - Go version >= 1.18, since it needs generics.
-- That is it, no external dependency.
+- That is it, no external dependencies.
 
 ## Usage
 
@@ -56,8 +56,8 @@ go get -u github.com/matheusoliveira/go-ordered-map/
 ```
 
 Then simple import `omap` or `omultimap` and use `New*` functions. Import paths:
-- `"github.com/matheusoliveira/go-ordered-map/pkg/omap"`
-- `"github.com/matheusoliveira/go-ordered-map/pkg/omultimap"`
+- `"github.com/matheusoliveira/go-ordered-map/omap"`
+- `"github.com/matheusoliveira/go-ordered-map/omultimap"`
 
 # omap
 
@@ -77,7 +77,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
+	"github.com/matheusoliveira/go-ordered-map/omap"
 )
 
 func main() {
@@ -124,7 +124,7 @@ bar = 2
 foo = 1
 ```
 
-See [omap API reference](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omap) for more details.
+See [omap API reference](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map/omap) for more details.
 
 # omultimap
 
@@ -141,8 +141,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/matheusoliveira/go-ordered-map/pkg/omultimap"
-	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
+	"github.com/matheusoliveira/go-ordered-map/omultimap"
+	"github.com/matheusoliveira/go-ordered-map/omap"
 )
 
 func main() {
@@ -195,7 +195,7 @@ unmarshal output:
   omultimap.OMultiMapLinked[foo:1 bar:2 baz:3 foo:4 bar:5 baz:6 foo:7 bar:8 baz:9]
 ```
 
-See [omultimap API reference](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map@main/pkg/omultimap) for more details.
+See [omultimap API reference](https://pkg.go.dev/github.com/matheusoliveira/go-ordered-map/omultimap) for more details.
 
 # Features
 
@@ -208,13 +208,12 @@ See [omultimap API reference](https://pkg.go.dev/github.com/matheusoliveira/go-o
 - [x] Get performance should be very close to builtin map (see [benchmarks](docs/benchmarks.md))
 - [x] have builtin sync implementation
 - [x] implements multimap (`omultimap`)
-- [ ] improve iterator capabilities:
-  - [ ] start iterator at specific key
-  - [ ] support reverse ordering iterator
-  - [ ] support add/remove at iterator position
+- [x] start iterator at specific key
+- [x] support reverse ordering iterator
+- [x] support add/remove at iterator position
 
-Did I miss anything? Create an [issue](https://github.com/matheusoliveira/go-ordered-map/issues) or open a [pull request](https://github.com/matheusoliveira/go-ordered-map/pulls) and let's discuss
+Did I miss anything? Create an [issue](https://github.com/matheusoliveira/go-ordered-map/issues) or open a [pull request](https://github.com/matheusoliveira/go-ordered-map/pulls) and let's discuss.
 
 # Benchmarks
 
-See [benchmarks](docs/benchmarks.md) for more details.
+There is a series of benchmarks comparing `omap` implementations with Go's builtin map, see [benchmarks](docs/benchmarks.md) for more details.

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
+	"github.com/matheusoliveira/go-ordered-map/omap"
 )
 
 // Create a new OMultiMap using default implementation, currently a OMultiMapLinked.

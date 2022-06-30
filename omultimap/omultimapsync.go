@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
+	"github.com/matheusoliveira/go-ordered-map/omap"
 )
 
 // Implements an OMultiMap with synchronization to be safely called from goroutines without

@@ -6,7 +6,7 @@
 package omultimap
 
 import (
-	"github.com/matheusoliveira/go-ordered-map/pkg/omap"
+	"github.com/matheusoliveira/go-ordered-map/omap"
 )
 
 type OMultiMap[K comparable, V any] interface {
