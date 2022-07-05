@@ -1,14 +1,13 @@
-//go:build exclude
-// +build exclude
-
 // This is not part of the final package, this is just a script to build benchmarks.md doc file
 // easily from the bench.txt output.
-// Please, do not be critical about these line of codes, was just a simple way to execute with
-// `go run benchtable.go` without any dependencies.
+// Please, do not be critical about these line of codes, was just a simple way to execute some
+// handy scripts.
 package main
 
 import (
 	"bufio"
+	"context"
+	"flag"
 	"fmt"
 	"go/doc"
 	"go/parser"
@@ -19,9 +18,11 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-)
 
-const importPath = "./omap/"
+	"github.com/google/subcommands"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
+)
 
 const introductionText = `# Benchmarks
 
@@ -35,7 +36,7 @@ To run the benchmarks your self, just do
 make bench
 ` + "```" + `
 
-You can generate the formatted output as bellow with [utilities/benchtable.go], the command is provided
+You can generate the formatted output as bellow with [scripts/benchtable.go], the command is provided
 in the Makefile as well (must run after generating the ` + "`bench.txt`" + ` with previous command):
 
 ` + "```sh" + `
@@ -46,14 +47,15 @@ In the following subsections it is shown the results of each benchmark. The tabl
 from [bench.txt](bench.txt) file, and the implementation with better performance is marked with
 a 🏆 in front of its name. It is recommended that you run the benchamarks for yourself though,
 since the results may vary, see "Conclusion" bellow each table for the authors opinion.
+
 `
 
 type FuncDoc struct {
-	Doc string
+	Doc  string
 	Link string
 }
 
-func readFuncDocs(pkgName string) (map[string]FuncDoc, error) {
+func readFuncDocs(pkgName string, importPath string) (map[string]FuncDoc, error) {
 	fset := token.NewFileSet()
 	pkgs, err := parser.ParseDir(fset, importPath, nil, parser.ParseComments)
 	if err != nil {
@@ -169,7 +171,7 @@ func (t *Table) Write(w io.Writer) (int, error) {
 	return n, nil
 }
 
-func (t *Table) Erase() {
+func (t *Table) Reset() {
 	t.rows = nil
 }
 
@@ -184,30 +186,8 @@ type BenchLine struct {
 }
 
 func fmtInt(i int) string {
-	if i == 0 {
-		return "0"
-	}
-	str := ""
-	if i < 0 {
-		str = "-"
-		i *= -1
-	}
-	for i != 0 {
-		div := i % 1000
-		i = i / 1000
-		var divStr string
-		if i == 0 {
-			divStr = fmt.Sprintf("%d", div)
-		} else {
-			divStr = fmt.Sprintf("%03d", div)
-		}
-		if str == "" {
-			str = divStr
-		} else {
-			str = divStr + "," + str
-		}
-	}
-	return str
+	p := message.NewPrinter(language.English)
+	return p.Sprintf("%d", i)
 }
 
 func processBenchmark(tbl *Table, w io.Writer, benchs []BenchLine, doc map[string]FuncDoc) {
@@ -220,7 +200,7 @@ func processBenchmark(tbl *Table, w io.Writer, benchs []BenchLine, doc map[strin
 	var sourceCodeLink string
 	const conclusionTag = "\nConclusion: "
 	if doc != nil {
-		name := "Benchmark"+benchs[0].Name
+		name := "Benchmark" + benchs[0].Name
 		if fd, ok := doc[name]; ok {
 			if fd.Link != "" {
 				sourceCodeLink = fmt.Sprintf("\n[Go to `%s` source code.](%s)\n", name, fd.Link)
@@ -267,7 +247,7 @@ func processBenchmark(tbl *Table, w io.Writer, benchs []BenchLine, doc map[strin
 	}
 	tbl.Write(w)
 	fmt.Fprintln(w, conclusionComment)
-	tbl.Erase()
+	tbl.Reset()
 	// raw
 	fmt.Fprintln(w, sourceCodeLink)
 	fmt.Fprintln(w, "<details>")
@@ -279,35 +259,8 @@ func processBenchmark(tbl *Table, w io.Writer, benchs []BenchLine, doc map[strin
 	fmt.Fprintln(w, "</details>")
 }
 
-func getMainReaderWritter() (io.ReadCloser, io.WriteCloser, error) {
-	// in
-	inputFilename := "docs/bench.txt"
-	if len(os.Args) >= 2 {
-		inputFilename = os.Args[1]
-	}
-	inputReader, err := os.Open(inputFilename)
-	if err != nil {
-		return nil, nil, err
-	}
-	// out
-	outputFilename := "docs/benchmarks.md"
-	if len(os.Args) >= 3 {
-		outputFilename = os.Args[2]
-	}
-	outputWriter, err := os.Create(outputFilename)
-	if err != nil {
-		return inputReader, nil, err
-	}
-	return inputReader, outputWriter, nil
-}
-
-func closeIfNotNil(obj io.Closer) {
-	if obj != nil {
-		obj.Close()
-	}
-}
-
 func processLines(in io.Reader) <-chan []BenchLine {
+	// TODO: we could use benchfmt instead of regexp (I didn't know about this package when I did it 😬)
 	outCh := make(chan []BenchLine)
 	// Bench output processor
 	reIsBench := regexp.MustCompile("^Benchmark")
@@ -359,26 +312,17 @@ func processLines(in io.Reader) <-chan []BenchLine {
 	return outCh
 }
 
-func main() {
-	var err error
-	// in/out
-	in, out, err := getMainReaderWritter()
-	defer closeIfNotNil(in)
-	defer closeIfNotNil(out)
-	if err != nil {
-		log.Fatal(err)
-	}
+func execBenchTable(importPath string, in io.Reader, out io.Writer) error {
 	// Process documentation
-	doc, err := readFuncDocs("omap_test")
+	doc, err := readFuncDocs("omap_test", importPath)
 	if err != nil {
-		log.Fatalf("Could not read documentation. Error: %v\n\n. Proceding without doc...", err)
+		return fmt.Errorf("could not read documentation: %w", err)
 	}
 	// Introduction text
-	fmt.Fprintln(out, introductionText)
+	fmt.Fprint(out, introductionText)
 	// Table columns setup
 	tbl := Table{
 		Columns: []TableColumn{
-			//{Title: "Bench", VMerge: true},
 			{Title: "Implemenation"},
 			{Title: "Nruns", Align: AlignRight},
 			{Title: "ns/op", Align: AlignRight},
@@ -392,4 +336,58 @@ func main() {
 		processBenchmark(&tbl, out, benchs, doc)
 		fmt.Fprintln(out)
 	}
+	return nil
+}
+
+type benchtableCmd struct {
+	importPath string
+}
+
+func (*benchtableCmd) Name() string {
+	return "benchtable"
+}
+
+func (*benchtableCmd) Synopsis() string {
+	return "Format docs/bench.txt file as markdown."
+}
+
+func (*benchtableCmd) Usage() string {
+	return "benchtable\n"
+}
+
+func (p *benchtableCmd) SetFlags(f *flag.FlagSet) {
+	f.StringVar(&p.importPath, "path", "./omap/", "omap import path")
+}
+
+func (p *benchtableCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	// in
+	inputFilename := "docs/bench.txt"
+	if len(f.Args()) >= 1 {
+		inputFilename = f.Args()[0]
+	}
+	inputReader, err := os.Open(inputFilename)
+	if err != nil {
+		log.Printf("failed to open %q: %v", inputFilename, err)
+		return subcommands.ExitFailure
+	}
+	defer inputReader.Close()
+
+	// out
+	outputFilename := "docs/benchmarks.md"
+	if len(f.Args()) >= 2 {
+		outputFilename = f.Args()[1]
+	}
+	outputWriter, err := os.Create(outputFilename)
+	if err != nil {
+		log.Printf("failed to open %q: %v", outputFilename, err)
+		return subcommands.ExitFailure
+	}
+	defer outputWriter.Close()
+
+	// exec
+	if err := execBenchTable(p.importPath, inputReader, outputWriter); err != nil {
+		log.Println(err)
+		return subcommands.ExitFailure
+	}
+	return subcommands.ExitSuccess
 }

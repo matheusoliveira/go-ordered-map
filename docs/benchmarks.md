@@ -10,7 +10,7 @@ To run the benchmarks your self, just do
 make bench
 ```
 
-You can generate the formatted output as bellow with [utilities/benchtable.go], the command is provided
+You can generate the formatted output as bellow with [scripts/benchtable.go], the command is provided
 in the Makefile as well (must run after generating the `bench.txt` with previous command):
 
 ```sh

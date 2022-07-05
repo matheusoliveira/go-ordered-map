@@ -1,4 +1,4 @@
-.PHONY: default vet test bench fuzz doc doc-bench pre-release
+.PHONY: default vet test bench fuzz doc doc-bench pre-release build-scripts
 
 PATTERN=.
 TEST_PATH=./...
@@ -29,10 +29,13 @@ bench:
 fuzz:
 	go test -fuzz=FuzzOMapImpls ./omap/
 
+build-scripts:
+	$(MAKE) -C scripts/
+
 doc: doc-bench
 
-doc-bench:
-	go run utilities/benchtable.go
+doc-bench: build-scripts
+	./scripts/scripts benchtable docs/bench.txt docs/benchmarks.md
 
 pre-release: vet test doc
 	@echo
